@@ -1,5 +1,6 @@
 from datetime import date
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field
 
 from app.models.base_model import BaseModel
@@ -8,10 +9,17 @@ from app.models.base_model import BaseModel
 class IndexConstituent(BaseModel, table=True):  # type: ignore[call-arg]
     SP500: str = "S&P 500"
 
+    __table_args__ = (
+        UniqueConstraint(
+            "index_name", "symbol", "snapshot_date", name="uq_index_constituent_daily"
+        ),
+    )
+
     index_name: str = Field(default=SP500, index=True)
     snapshot_date: date = Field(
-        index=True
-    )  # date when the snapshot was taken (i.e., detected change)
+        index=True,
+        description="date when the snapshot was taken (i.e., detected change)",
+    )
     symbol: str = Field(
         index=True, description="The stock ticker symbol as of the snapshot date"
     )
