@@ -34,6 +34,6 @@ start-db:
 	docker-compose up -d db
 
 main:
-	poetry run python3 main.py
+	poetry run python main.py
 
 start: requirements start-db migrations main
