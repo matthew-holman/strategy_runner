@@ -32,13 +32,12 @@ def daily_sp500_sync():
 
         ic_objects = map_to_constituents(records, today, snapshot_hash)
 
-        # transaction to ensure that constituents and snapshots are save together
-        with db_session.begin():
-            ic_handler.save_all(ic_objects)
-            ic_handler.save_snapshot(SP500, snapshot_hash, today)
-            Log.info(
-                f"{len(ic_objects)} records inserted for {today} with hash {snapshot_hash}"
-            )
+        ic_handler.save_all(ic_objects)
+        ic_handler.save_snapshot(SP500, snapshot_hash, today)
+        db_session.commit()
+        Log.info(
+            f"{len(ic_objects)} records inserted for {today} with hash {snapshot_hash}"
+        )
 
 
 def compute_snapshot_hash(symbols: list[str]) -> str:
