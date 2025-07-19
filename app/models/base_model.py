@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
+from typing import Optional
 
 from pydantic import Extra
-from sqlalchemy import Column, DateTime, func
+from sqlalchemy import DateTime, func
 from sqlmodel import Field, SQLModel
 
 
@@ -18,17 +19,24 @@ def default_now() -> datetime:
 class BaseModel(SQLModel):
     __abstract__ = True
 
-    id: int | None = Field(default=None, primary_key=True)
-
-    created_at: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    created_at: Optional[datetime] = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "server_default": func.now(),
+        },
     )
 
-    updated_at: datetime | None = Field(
-        default=None, sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "onupdate": func.now(),
+            "server_default": func.now(),
+        },
     )
 
-    # deleted_at: datetime | None = Field(
+    # deleted_at: Optional[datetime] = Field(
     #     default=None,
     #     sa_column=Column(DateTime(timezone=True), onupdate=func.now())
     # )

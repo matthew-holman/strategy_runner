@@ -1,11 +1,18 @@
+import certifi
 import pandas as pd
+import requests
 
 
-def get_sp500_constituents_from_wikipedia(url: str) -> list[dict]:
-    tables = pd.read_html(url)
-    df = tables[0]  # first table is the constituents
+def fetch_wikipedia_html(url: str) -> str:
+    response = requests.get(url, verify=certifi.where())
+    response.raise_for_status()
+    return response.text
 
-    # Rename for consistency with your model
+
+def parse_sp500_constituents_html(html: str) -> list[dict]:
+    tables = pd.read_html(html)
+    df = tables[0]
+
     df = df.rename(
         columns={
             "Symbol": "symbol",

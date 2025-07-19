@@ -1,6 +1,5 @@
+from core.db import Base, engine
 from sqlmodel import SQLModel
-
-from app.db.db import Base, engine
 
 # Import the DB models to create the tables
 
