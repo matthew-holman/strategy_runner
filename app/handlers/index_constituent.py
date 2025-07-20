@@ -14,7 +14,7 @@ from sqlmodel import Session, select
 class IndexConstituentHandler:
     db_session: Session
 
-    def snapshot_exists(self, index_name: str, snapshot_hash: str) -> bool:
+    def snapshot_matches_most_recent(self, index_name: str, snapshot_hash: str) -> bool:
         stmt = (
             select(IndexSnapshot)
             .where(IndexSnapshot.index_name == index_name)
@@ -25,6 +25,15 @@ class IndexConstituentHandler:
         return (
             last_snapshot is not None and last_snapshot.snapshot_hash == snapshot_hash
         )
+
+    def get_earliest_snapshot(self, index_name: str) -> IndexSnapshot:
+        stmt = (
+            select(IndexSnapshot)
+            .where(IndexSnapshot.index_name == index_name)
+            .order_by(IndexSnapshot.snapshot_date.asc())
+            .limit(1)
+        )
+        return self.db_session.exec(stmt).first()
 
     def save_all(self, index_constituents: List[IndexConstituentCreate]) -> None:
         ics = [IndexConstituent.model_validate(ic) for ic in index_constituents]
