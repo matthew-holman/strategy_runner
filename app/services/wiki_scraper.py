@@ -24,7 +24,8 @@ def parse_sp500_constituents_html(html: str) -> list[dict]:
     if table is None:
         raise ValueError("No table with id='constituents' found")
 
-    df = pd.read_html(str(table))[0]
+    # maintain CIK as string with leading zeros
+    df = pd.read_html(str(table), converters={"CIK": lambda x: str(x).zfill(10)})[0]
     df = rename_columns(df)
 
     records = df[

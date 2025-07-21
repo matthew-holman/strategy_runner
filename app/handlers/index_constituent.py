@@ -38,15 +38,16 @@ class IndexConstituentHandler:
     def save_all(self, index_constituents: List[IndexConstituentCreate]) -> None:
         ics = [IndexConstituent.model_validate(ic) for ic in index_constituents]
         self.db_session.add_all(ics)
-        self.db_session.commit()
+        self.db_session.flush()
 
     def save_snapshot(
         self, index_name: str, snapshot_hash: str, snapshot_date: date
-    ) -> None:
+    ) -> IndexSnapshot:
         snapshot = IndexSnapshot(
             index_name=index_name,
             snapshot_hash=snapshot_hash,
             snapshot_date=snapshot_date,
         )
         self.db_session.add(snapshot)
-        self.db_session.commit()
+        self.db_session.flush()
+        return snapshot
