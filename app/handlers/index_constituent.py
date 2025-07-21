@@ -5,8 +5,8 @@ from typing import List
 from models.index_constituent import (
     IndexConstituent,
     IndexConstituentCreate,
-    IndexSnapshot,
 )
+from models.index_snapshot import IndexSnapshot
 from sqlmodel import Session, select
 
 
