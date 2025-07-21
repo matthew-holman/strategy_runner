@@ -1,5 +1,3 @@
-from datetime import date
-
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field
 
@@ -11,10 +9,6 @@ SP500: str = "S&P 500"
 class IndexConstituentBase(BaseModel, table=False):  # type: ignore[call-arg]
 
     index_name: str = Field(default=SP500, index=True)
-    snapshot_date: date = Field(
-        index=True,
-        description="As historic data is added this represents when this version of the index was actual",
-    )
     security_id: int = Field(foreign_key="security.id")
     snapshot_id: int = Field(foreign_key="index_snapshot.id")
     # snapshot: Optional[IndexSnapshot] = Relationship(back_populates="constituents")

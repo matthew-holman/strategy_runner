@@ -38,7 +38,7 @@ def daily_sp500_sync():
 
         snapshot = ic_handler.save_snapshot(SP500, snapshot_hash, today)
 
-        ic_objects = map_ic_objects(records, security_handler, snapshot.id, today)
+        ic_objects = map_ic_objects(records, security_handler, snapshot.id)
         ic_handler.save_all(ic_objects)
 
         db_session.commit()
@@ -90,9 +90,7 @@ def backfill_sp500_from_wayback():
                 continue
 
             snapshot = ic_handler.save_snapshot(SP500, snapshot_hash, snapshot_date)
-            ic_objects = map_ic_objects(
-                records, security_handler, snapshot.id, snapshot_date
-            )
+            ic_objects = map_ic_objects(records, security_handler, snapshot.id)
 
             ic_handler.save_all(ic_objects)
             db_session.commit()
@@ -112,7 +110,6 @@ def map_ic_objects(
     records: List[Dict],
     security_handler: SecurityHandler,
     snapshot_id: int,
-    snapshot_date: date,
 ):
     ic_objects = []
     for record in records:
@@ -120,7 +117,6 @@ def map_ic_objects(
         ic_objects.append(
             IndexConstituentCreate(
                 index_name=SP500,
-                snapshot_date=snapshot_date,
                 snapshot_id=snapshot_id,
                 security_id=security.id,
             )
