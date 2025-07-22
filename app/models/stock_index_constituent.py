@@ -6,17 +6,17 @@ from app.models.base_model import BaseModel
 SP500: str = "S&P 500"
 
 
-class IndexConstituentBase(BaseModel, table=False):  # type: ignore[call-arg]
+class StockIndexConstituentBase(BaseModel, table=False):  # type: ignore[call-arg]
 
     index_name: str = Field(default=SP500, index=True)
     security_id: int = Field(foreign_key="security.id")
-    snapshot_id: int = Field(foreign_key="index_snapshot.id")
+    snapshot_id: int = Field(foreign_key="stock_index_snapshot.id")
     # snapshot: Optional[IndexSnapshot] = Relationship(back_populates="constituents")
 
 
-class IndexConstituent(IndexConstituentBase, table=True):  # type: ignore[call-arg]
+class StockIndexConstituent(StockIndexConstituentBase, table=True):  # type: ignore[call-arg]
 
-    __tablename__ = "index_constituent"
+    __tablename__ = "stock_index_constituent"
 
     id: int = Field(default=None, primary_key=True)
 
@@ -27,12 +27,12 @@ class IndexConstituent(IndexConstituentBase, table=True):  # type: ignore[call-a
     )
 
 
-class IndexConstituentCreate(IndexConstituentBase):
+class StockIndexConstituentCreate(StockIndexConstituentBase):
     pass
 
 
-class IndexConstituentRead(IndexConstituentBase):
+class StockIndexConstituentRead(StockIndexConstituentBase):
     id: int
 
 
-IndexConstituent.model_rebuild()
+StockIndexConstituent.model_rebuild()

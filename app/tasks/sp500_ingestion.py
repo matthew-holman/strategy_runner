@@ -1,31 +1,31 @@
-import hashlib
 import time
 
 from datetime import date, datetime
-from typing import Dict, List, Set
+from typing import Dict, List
 
 from core.db import get_db
 from handlers.index_constituent import IndexConstituentHandler
 from handlers.security import SecurityHandler
-from models.index_constituent import SP500, IndexConstituentCreate
+from models.stock_index_constituent import SP500, StockIndexConstituentCreate
+from models.stock_index_snapshot import StockIndexSnapshot
 from requests import HTTPError
 
-from app.services.wiki_scraper import (
-    WIKI_PAGE,
-    fetch_html,
-    get_wayback_snapshot_list,
-    parse_sp500_constituents_html,
+from app.services.stock_index_service import (
+    extract_constituents,
+    get_latest_snapshot_html,
+    get_snapshot_html_from_wayback,
+    get_snapshot_timestamps,
 )
 from app.utils import Log
 
 
 def daily_sp500_sync():
-    html = fetch_html(WIKI_PAGE)
-    records = parse_sp500_constituents_html(html)
+    html = get_latest_snapshot_html()
+    records = extract_constituents(html)
     Log.info(f"{len(records)} records parsed from S&P 500 Wikipedia page.")
 
     symbols = {r["symbol"].strip().upper() for r in records}
-    snapshot_hash = compute_snapshot_hash(symbols)
+    snapshot_hash = StockIndexSnapshot.compute_snapshot_hash(symbols)
     today = date.today()
 
     with next(get_db()) as db_session:
@@ -48,40 +48,37 @@ def daily_sp500_sync():
 
 
 def backfill_sp500_from_wayback():
-    snapshot_urls = get_wayback_snapshot_list()
+    snapshot_urls = get_snapshot_timestamps()
 
     with next(get_db()) as db_session:
         ic_handler = IndexConstituentHandler(db_session)
         security_handler = SecurityHandler(db_session)
 
-        oldest_hash = ic_handler.get_earliest_snapshot(SP500).snapshot_hash
-        oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
+        oldest_snapshot = ic_handler.get_earliest_snapshot(SP500)
+        oldest_hash = oldest_snapshot.snapshot_hash
+        oldest_snapshot_date = oldest_snapshot.snapshot_date
 
-        # Iterate backwards through snapshots (most recent to oldest)
-        for snapshot in snapshot_urls[-2::-1]:
-            snapshot_date = datetime.strptime(snapshot[0], "%Y%m%d%H%M%S").date()
+        for timestamp, original_path in reversed(snapshot_urls[:-1]):
+            snapshot_date = datetime.strptime(timestamp, "%Y%m%d%H%M%S").date()
             if snapshot_date > oldest_snapshot_date:
                 Log.info(
                     f"Skipping snapshot from {snapshot_date}, newer than DB's oldest snapshot."
                 )
                 continue
 
-            time.sleep(10)  # be kind to way back machine
+            time.sleep(10)
 
             try:
-                wayback_snapshot_url = (
-                    f"https://web.archive.org/web/{snapshot[0]}/{snapshot[1]}"
-                )
-                html = fetch_html(wayback_snapshot_url)
+                html = get_snapshot_html_from_wayback(timestamp, original_path)
             except HTTPError as err:
                 Log.error(
-                    f"Got HTTP error {err.response} in response when requesting page for {snapshot[0]}"
+                    f"Got HTTP error {err.response} in response when requesting page for {timestamp}"
                 )
                 continue
 
-            records = parse_sp500_constituents_html(html)
+            records = extract_constituents(html)
             symbols = {r["symbol"].strip().upper() for r in records}
-            snapshot_hash = compute_snapshot_hash(symbols)
+            snapshot_hash = StockIndexSnapshot.compute_snapshot_hash(symbols)
 
             if snapshot_hash == oldest_hash:
                 Log.info(
@@ -101,21 +98,16 @@ def backfill_sp500_from_wayback():
             oldest_hash = snapshot_hash
 
 
-def compute_snapshot_hash(symbols: Set[str]) -> str:
-    canonical = ",".join(sorted(symbols))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
 def map_ic_objects(
     records: List[Dict],
     security_handler: SecurityHandler,
     snapshot_id: int,
-):
+) -> List[StockIndexConstituentCreate]:
     ic_objects = []
     for record in records:
         security = security_handler.get_or_create(record)
         ic_objects.append(
-            IndexConstituentCreate(
+            StockIndexConstituentCreate(
                 index_name=SP500,
                 snapshot_id=snapshot_id,
                 security_id=security.id,
