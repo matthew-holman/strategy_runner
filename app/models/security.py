@@ -1,4 +1,4 @@
-from sqlmodel import Field
+from sqlmodel import Field, Relationship
 
 from app.models.base_model import BaseModel
 
@@ -25,6 +25,9 @@ class SecurityBase(BaseModel, table=False):  # type: ignore[call-arg]
 class Security(SecurityBase, table=True):  # type: ignore[call-arg]
 
     id: int = Field(default=None, primary_key=True)
+    constituents: list["StockIndexConstituent"] = Relationship(  # type: ignore[name-defined]  # noqa: F821
+        back_populates="security"
+    )
 
 
 class SecurityCreate(SecurityBase):  # type: ignore[call-arg]

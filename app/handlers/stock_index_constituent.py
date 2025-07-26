@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 
 
 @dataclass
-class IndexConstituentHandler:
+class StockIndexConstituentHandler:
     db_session: Session
 
     def snapshot_matches_most_recent(self, index_name: str, snapshot_hash: str) -> bool:
@@ -34,6 +34,21 @@ class IndexConstituentHandler:
             .limit(1)
         )
         return self.db_session.exec(stmt).first()
+
+    def get_most_recent_snapshot(self, index_name: str) -> StockIndexSnapshot:
+        stmt = (
+            select(StockIndexSnapshot)
+            .where(StockIndexSnapshot.index_name == index_name)
+            .order_by(StockIndexSnapshot.snapshot_date.desc())
+            .limit(1)
+        )
+        return self.db_session.exec(stmt).first()
+
+    def get_by_snapshot_id(self, snapshot_id: int) -> List[StockIndexConstituent]:
+        stmt = select(StockIndexConstituent).where(
+            StockIndexConstituent.snapshot_id == snapshot_id
+        )
+        return self.db_session.exec(stmt)
 
     def save_all(self, index_constituents: List[StockIndexConstituentCreate]) -> None:
         ics = [StockIndexConstituent.model_validate(ic) for ic in index_constituents]

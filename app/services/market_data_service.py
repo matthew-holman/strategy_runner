@@ -1,7 +1,6 @@
 from datetime import date
-from typing import Optional
+from typing import Dict, List, Optional
 
-import pandas as pd
 import yfinance as yf
 
 from app.utils import Log
@@ -15,7 +14,7 @@ class MarketDataService:
         start_date: date,
         end_date: Optional[date] = None,
         interval: str = "1d",
-    ) -> pd.DataFrame:
+    ) -> List[Dict] | None:
 
         try:
             ticker_obj = yf.Ticker(ticker)
@@ -27,13 +26,13 @@ class MarketDataService:
             )
         except Exception as e:
             Log.error(f"Error fetching {ticker} from Yahoo Finance: {e}")
-            return pd.DataFrame()
+            raise e
 
         if df.empty:
             Log.warning(
                 f"No OHLCV data found for {ticker} between {start_date} and {end_date}"
             )
-            return df
+            return None
 
         df = df.rename(
             columns={
@@ -50,4 +49,4 @@ class MarketDataService:
         df.index.name = "date"
         df.reset_index(inplace=True)
 
-        return df
+        return df.to_dict(orient="records")

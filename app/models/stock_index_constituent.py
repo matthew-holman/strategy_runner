@@ -1,5 +1,9 @@
+from typing import Optional
+
+from models.security import Security
+from models.stock_index_snapshot import StockIndexSnapshot
 from sqlalchemy import UniqueConstraint
-from sqlmodel import Field
+from sqlmodel import Field, Relationship
 
 from app.models.base_model import BaseModel
 
@@ -11,7 +15,6 @@ class StockIndexConstituentBase(BaseModel, table=False):  # type: ignore[call-ar
     index_name: str = Field(default=SP500, index=True)
     security_id: int = Field(foreign_key="security.id")
     snapshot_id: int = Field(foreign_key="stock_index_snapshot.id")
-    # snapshot: Optional[IndexSnapshot] = Relationship(back_populates="constituents")
 
 
 class StockIndexConstituent(StockIndexConstituentBase, table=True):  # type: ignore[call-arg]
@@ -25,6 +28,9 @@ class StockIndexConstituent(StockIndexConstituentBase, table=True):  # type: ign
             "snapshot_id", "security_id", name="uq_constituent_snapshot_security"
         ),
     )
+
+    snapshot: Optional[StockIndexSnapshot] = Relationship(back_populates="constituents")
+    security: Optional[Security] = Relationship(back_populates="constituents")
 
 
 class StockIndexConstituentCreate(StockIndexConstituentBase):

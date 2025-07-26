@@ -3,7 +3,7 @@ import hashlib
 from datetime import date
 from typing import Optional, Set
 
-from sqlmodel import Field
+from sqlmodel import Field, Relationship
 
 from app.models.base_model import BaseModel
 
@@ -19,7 +19,9 @@ class StockIndexSnapshot(BaseModel, table=True):  # type: ignore[call-arg]
         index=True,
         description="As historic data is added this represents when this version of the index was actual",
     )
-    # constituents: list["StockIndexConstituent"] = Relationship(back_populates="snapshot")
+    constituents: list["StockIndexConstituent"] = Relationship(  # type: ignore[name-defined]  # noqa: F821
+        back_populates="snapshot"
+    )
 
     @staticmethod
     def compute_snapshot_hash(symbols: Set[str]) -> str:

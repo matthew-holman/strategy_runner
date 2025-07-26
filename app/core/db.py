@@ -43,7 +43,7 @@ def upsert(
     data_iter: List[Any],
     exclude_columns: Set[str],
 ) -> List[Any]:
-    data = [row.dict(exclude=exclude_columns) for row in data_iter]
+    data = [row.model_dump(exclude=exclude_columns) for row in data_iter]
     insert_statement = insert(model.__table__).values(data)
     updated_params = {
         c.key: c for c in insert_statement.excluded if c.key not in exclude_columns
@@ -53,5 +53,5 @@ def upsert(
         constraint=constraint,
         set_=updated_params,
     ).returning(model.__table__)
-    updated_objects = db_session.execute(upsert_statement).fetchall()
-    return [model(**row) for row in updated_objects]
+    updated_objects = db_session.exec(upsert_statement).fetchall()
+    return [model(**row._mapping) for row in updated_objects]
