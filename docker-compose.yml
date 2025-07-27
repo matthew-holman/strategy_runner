@@ -1,20 +1,19 @@
 services:
   db:
     image: "postgres:${POSTGRES_VERSION}"
+    container_name: trading_bot_db
     ports:
       - 5432:5432
-    container_name: trading_bot_db
     env_file:
       - .env
     volumes:
-      - postgres_data:/Users/matthewh/Documents/trading-bot
+      - trading_bot_db_data:/var/lib/postgresql/data
     restart: unless-stopped
-
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 8s
       timeout: 8s
       retries: 5
 
 volumes:
-  postgres_data:
+  trading_bot_db_data:

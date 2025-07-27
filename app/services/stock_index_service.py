@@ -1,5 +1,6 @@
 import json
 
+from io import StringIO
 from typing import List
 
 import certifi
@@ -49,7 +50,9 @@ def extract_constituents(html: str) -> list[dict]:
     if table is None:
         raise ValueError("No table with id='constituents' found")
 
-    df = pd.read_html(str(table), converters={"CIK": lambda x: str(x).zfill(10)})[0]
+    df = pd.read_html(
+        StringIO(str(table)), converters={"CIK": lambda x: str(x).zfill(10)}
+    )[0]
     df = _rename_columns(df)
 
     return df[

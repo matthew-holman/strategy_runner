@@ -1,6 +1,8 @@
+# Stock Picker bot
+
 ## Development Guide
 
-### 📦 Project Setup
+###  Project Setup
 
 > **Note:** Poetry 2.0+ no longer includes the `poetry shell` command by default.
 
@@ -8,6 +10,23 @@ To activate the virtual environment manually, use:
 
 ```bash
 poetry env activate $(poetry env list --full-path | grep Activated | cut -d' ' -f1)
+```
+
+#### To add daily cron to update tickers
+```bash
+chmod +x scripts/setup_cron.sh
+make setup-cron
+```
+
+##### To confirm it's added
+```bash
+crontab -l
+```
+
+##### To Remove the cron job
+```bash
+make remove-cron
+```
 
 #### For running server + migrations + requirements
 ```bash
@@ -35,4 +54,6 @@ make check
 ```
 
 ### add pre commit hook for formatting
+```bash
 pre-commit install
+```

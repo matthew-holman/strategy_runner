@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 from models.security import Security
 from sqlmodel import Session, select
@@ -18,3 +19,7 @@ class SecurityHandler:
         self.db_session.add(new_security)
         self.db_session.flush()
         return new_security
+
+    def get_all(self) -> List[Security]:
+        stmt = select(Security)
+        return self.db_session.exec(stmt).all()

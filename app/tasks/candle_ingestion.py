@@ -28,32 +28,35 @@ def daily_candle_fetch():
         today = date.today()
         yesterday = today - timedelta(days=1)
 
-        for index_constituent in index_constituents:
+        if _is_weekend(yesterday):
+            Log.info("Yesterday was a weekend, no data to pull.")
+        else:
+            for index_constituent in index_constituents:
 
-            from_date = (
-                ohlcv_handler.get_latest_candle_date(index_constituent.security.id)
-                or yesterday
-            )
-            if from_date >= today:
-                Log.info(
-                    f"No new data to fetch for {index_constituent.security.symbol} — up to date."
+                from_date = (
+                    ohlcv_handler.get_latest_candle_date(index_constituent.security.id)
+                    or yesterday
                 )
-                continue
+                if from_date >= today:
+                    Log.info(
+                        f"No new data to fetch for {index_constituent.security.symbol} — up to date."
+                    )
+                    continue
 
-            records = MarketDataService.fetch_ohlcv_history(
-                index_constituent.security.symbol, from_date, today
-            )
+                records = MarketDataService.fetch_ohlcv_history(
+                    index_constituent.security.symbol, from_date, today
+                )
 
-            if records:
-                daily_candles = _map_ohlcv_objects(
-                    records, index_constituent.security.id
-                )
-                ohlcv_handler.save_all(daily_candles)
-                db_session.commit()
-                Log.info(
-                    f"Inserted {len(daily_candles)} daily OHLCV records for security "
-                    f"{index_constituent.security.company_name} from {from_date} to today"
-                )
+                if records:
+                    daily_candles = _map_ohlcv_objects(
+                        records, index_constituent.security.id
+                    )
+                    ohlcv_handler.save_all(daily_candles)
+                    db_session.commit()
+                    Log.info(
+                        f"Inserted {len(daily_candles)} daily OHLCV records for security "
+                        f"{index_constituent.security.company_name} from {from_date} to today"
+                    )
 
 
 def historical_candle_backfill():
@@ -139,3 +142,7 @@ def _chunk_date_range(start: date, end: date, chunk_size: timedelta):
         chunks.append((cursor, chunk_end))
         cursor = chunk_end
     return chunks
+
+
+def _is_weekend(d=date.today()):
+    return d.weekday() > 4
