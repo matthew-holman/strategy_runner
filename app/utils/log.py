@@ -7,19 +7,23 @@ LOG_NAME = "etsy-keyword-logs"
 class Log:
     @staticmethod
     def setup(application_name: str, log_name: str = LOG_NAME) -> logging.Logger:
-        formatter = logging.Formatter(
-            fmt=f"%(name)s :: {application_name} - "  # type: ignore
-            f"%(asctime)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S(%Z)",
-        )
-
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(formatter)
-
         logger = logging.getLogger(log_name)
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(handler)
-        return logger
+        if not logger.hasHandlers():
+            formatter = logging.Formatter(
+                fmt=f"%(name)s :: {application_name} - "  # type: ignore
+                f"%(asctime)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S(%Z)",
+            )
+
+            handler = logging.StreamHandler(sys.stdout)
+            handler.setFormatter(formatter)
+
+            logger = logging.getLogger(log_name)
+            logger.setLevel(logging.DEBUG)
+            logger.addHandler(handler)
+            return logger
+        else:
+            return logger
 
     @staticmethod
     def debug(message: str, log_name=LOG_NAME) -> None:

@@ -29,9 +29,6 @@ class MarketDataService:
             raise e
 
         if df.empty:
-            Log.warning(
-                f"No OHLCV data found for {ticker} between {start_date} and {end_date}"
-            )
             return None
 
         df = df.rename(

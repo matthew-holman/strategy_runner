@@ -39,7 +39,7 @@ main:
 start: requirements start-db migrations main
 
 setup-cron:
-	./scripts/setup_cron.sh
+	./setup_scripts/setup_cron.sh
 
 remove-cron:
-	./scripts/remove_cron.sh
+	./setup_scripts/remove_cron.sh
