@@ -1,11 +1,11 @@
 from typing import Optional
 
-from models.security import Security
-from models.stock_index_snapshot import StockIndexSnapshot
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from app.models.base_model import BaseModel
+from app.models.security import Security
+from app.models.stock_index_snapshot import StockIndexSnapshot
 
 SP500: str = "S&P 500"
 
