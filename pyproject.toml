@@ -22,7 +22,8 @@ dependencies = [
     "pytest (>=8.4.1,<9.0.0)",
     "lxml (>=6.0.0,<7.0.0)",
     "beautifulsoup4 (>=4.13.4,<5.0.0)",
-    "yfinance (>=0.2.65,<0.3.0)"
+    "yfinance (>=0.2.65,<0.3.0)",
+    "pandas-market-calendars (>=5.1.1,<6.0.0)"
 ]
 
 
