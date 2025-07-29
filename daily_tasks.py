@@ -2,9 +2,8 @@
 
 import sys
 
-from tasks.candle_ingestion import daily_candle_fetch
-from tasks.sp500_ingestion import daily_sp500_sync
-
+from app.tasks.candle_ingestion import daily_candle_fetch
+from app.tasks.sp500_ingestion import daily_sp500_sync
 from app.utils.log import Log
 
 # Setup logger with a clear application name

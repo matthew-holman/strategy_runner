@@ -13,7 +13,7 @@ else
 fi
 
 # Resolve the daily_tasks.py script path
-TASK_SCRIPT="$REPO_ROOT/app/scripts/daily_tasks.py"  # adjust if location differs
+TASK_SCRIPT="$REPO_ROOT/daily_tasks.py"  # adjust if location differs
 
 # Ensure the log directory exists
 LOG_FILE="/var/log/trading_tasks.log"

@@ -2,12 +2,13 @@ from dataclasses import dataclass
 from datetime import date
 from typing import List
 
-from models.stock_index_constituent import (
+from sqlmodel import Session, select
+
+from app.models.stock_index_constituent import (
     StockIndexConstituent,
     StockIndexConstituentCreate,
 )
-from models.stock_index_snapshot import StockIndexSnapshot
-from sqlmodel import Session, select
+from app.models.stock_index_snapshot import StockIndexSnapshot
 
 
 @dataclass
@@ -18,7 +19,7 @@ class StockIndexConstituentHandler:
         stmt = (
             select(StockIndexSnapshot)
             .where(StockIndexSnapshot.index_name == index_name)
-            .order_by(StockIndexSnapshot.snapshot_date.desc())
+            .order_by(StockIndexSnapshot.snapshot_date.desc())  # type: ignore[attr-defined]
             .limit(1)
         )
         last_snapshot = self.db_session.exec(stmt).first()
@@ -30,7 +31,7 @@ class StockIndexConstituentHandler:
         stmt = (
             select(StockIndexSnapshot)
             .where(StockIndexSnapshot.index_name == index_name)
-            .order_by(StockIndexSnapshot.snapshot_date.asc())
+            .order_by(StockIndexSnapshot.snapshot_date.asc())  # type: ignore[attr-defined]
             .limit(1)
         )
         return self.db_session.exec(stmt).first()
@@ -39,7 +40,7 @@ class StockIndexConstituentHandler:
         stmt = (
             select(StockIndexSnapshot)
             .where(StockIndexSnapshot.index_name == index_name)
-            .order_by(StockIndexSnapshot.snapshot_date.desc())
+            .order_by(StockIndexSnapshot.snapshot_date.desc())  # type: ignore[attr-defined]
             .limit(1)
         )
         return self.db_session.exec(stmt).first()

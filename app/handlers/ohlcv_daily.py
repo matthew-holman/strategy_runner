@@ -1,18 +1,19 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
-from core.db import upsert
-from models.ohlcv_daily import OHLCVDaily, OHLCVDailyCreate
 from sqlalchemy import func
 from sqlmodel import Session, select
+
+from app.core.db import upsert
+from app.models.ohlcv_daily import OHLCVDaily, OHLCVDailyCreate
 
 
 @dataclass
 class OHLCVDailyHandler:
     db_session: Session
 
-    def save_all(self, new_candles: list[OHLCVDailyCreate]) -> None:
+    def save_all(self, new_candles: List[OHLCVDailyCreate]) -> None:
         if not new_candles:
             return
 

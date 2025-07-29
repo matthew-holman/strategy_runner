@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from typing import List
 
-from models.security import Security
 from sqlmodel import Session, select
+
+from app.models.security import Security
 
 
 @dataclass

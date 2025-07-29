@@ -2,12 +2,12 @@ import datetime
 
 from typing import Any, Generator, List, Optional, Set
 
-from core.orm_mixins import ColumnMappingMixIn
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.declarative import declarative_base
 from sqlmodel import Session
 
+from app.core.orm_mixins import ColumnMappingMixIn
 from app.core.settings import get_settings
 
 settings = get_settings()
