@@ -27,6 +27,7 @@ class StockIndexConstituent(StockIndexConstituentBase, table=True):  # type: ign
         UniqueConstraint(
             "snapshot_id", "security_id", name="uq_constituent_snapshot_security"
         ),
+        {"extend_existing": True},
     )
 
     snapshot: Optional[StockIndexSnapshot] = Relationship(back_populates="constituents")

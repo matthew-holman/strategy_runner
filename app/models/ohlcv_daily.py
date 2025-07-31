@@ -28,6 +28,7 @@ class OHLCVDaily(OHLCVDailyBase, table=True):  # type: ignore[call-arg]
         UniqueConstraint(
             "candle_date", "security_id", name="uq_ohlcv_daily_date_security"
         ),
+        {"extend_existing": True},
     )
 
 

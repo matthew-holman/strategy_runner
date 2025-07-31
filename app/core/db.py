@@ -1,10 +1,9 @@
-import datetime
-
 from typing import Any, Generator, List, Optional, Set
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.dml import ReturningInsert
 from sqlmodel import Session
 
 from app.core.orm_mixins import ColumnMappingMixIn
@@ -39,19 +38,30 @@ Base = declarative_base(
 def upsert(
     model: Any,
     db_session: Session,
-    constraint: Optional[str],
-    data_iter: List[Any],
     exclude_columns: Set[str],
+    data_iter: List[Any],
+    constraint: Optional[str] = None,
+    index_elements: Optional[List[str]] = None,
 ) -> List[Any]:
     data = [row.model_dump(exclude=exclude_columns) for row in data_iter]
     insert_statement = insert(model.__table__).values(data)
     updated_params = {
         c.key: c for c in insert_statement.excluded if c.key not in exclude_columns
     }
-    updated_params["updated_at"] = datetime.datetime.now(datetime.UTC)  # type: ignore
-    upsert_statement = insert_statement.on_conflict_do_update(
-        constraint=constraint,
-        set_=updated_params,
-    ).returning(model.__table__)
+
+    if constraint:
+        conflict_stmt = insert_statement.on_conflict_do_update(
+            constraint=constraint,
+            set_=updated_params,
+        )
+    elif index_elements:
+        conflict_stmt = insert_statement.on_conflict_do_update(
+            index_elements=index_elements,
+            set_=updated_params,
+        )
+    else:
+        raise ValueError("Either 'constraint' or 'index_elements' must be provided.")
+
+    upsert_statement: ReturningInsert = conflict_stmt.returning(model.__table__)
     updated_objects = db_session.exec(upsert_statement).fetchall()
     return [model(**row._mapping) for row in updated_objects]

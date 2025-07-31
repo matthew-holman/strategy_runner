@@ -3,6 +3,7 @@
 import sys
 
 from app.tasks.candle_ingestion import daily_candle_fetch
+from app.tasks.indicator_computation import compute_daily_indicators_for_all_securities
 from app.tasks.sp500_ingestion import daily_sp500_sync
 from app.utils.log import Log
 
@@ -19,6 +20,9 @@ def main():
 
         Log.info("Running daily_candle_fetch to pull daily ohlcv data...")
         daily_candle_fetch()
+
+        Log.info("Running indicator computation on pulled daily ohlcv data...")
+        compute_daily_indicators_for_all_securities()
 
     except Exception as e:
         Log.critical(f"Daily tasks failed with exception: {e}")

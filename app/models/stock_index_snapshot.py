@@ -3,7 +3,6 @@ import hashlib
 from datetime import date
 from typing import Optional, Set
 
-from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship
 
 from app.models.base_model import BaseModel
@@ -16,7 +15,7 @@ class StockIndexSnapshot(BaseModel, table=True):  # type: ignore[call-arg]
     id: Optional[int] = Field(default=None, primary_key=True)
     index_name: str = Field(index=True)
     snapshot_hash: str = Field(index=False)
-    snapshot_date: Mapped[date] = Field(
+    snapshot_date: date = Field(
         index=True,
         description="As historic data is added this represents when this version of the index was actual",
     )

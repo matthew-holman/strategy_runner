@@ -33,4 +33,7 @@ def get_nth_previous_trading_day(
     if not calendar:
         raise UnsupportedExchangeError(f"Exchange '{exchange}' is not supported yet")
 
-    return calendar.get_nth_previous_trading_day(as_of, lookback_days)
+    lookback_adjusted = (
+        lookback_days + 1
+    )  # we need to pad by a day to get correct result
+    return calendar.get_nth_previous_trading_day(as_of, lookback_adjusted)

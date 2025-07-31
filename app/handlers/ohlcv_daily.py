@@ -20,9 +20,9 @@ class OHLCVDailyHandler:
         upsert(
             model=OHLCVDaily,
             db_session=self.db_session,
-            constraint="uq_ohlcv_daily_date_security",
-            data_iter=new_candles,
             exclude_columns={"id", "created_at"},
+            data_iter=new_candles,
+            constraint="uq_ohlcv_daily_date_security",
         )
         self.db_session.flush()
 
@@ -39,3 +39,13 @@ class OHLCVDailyHandler:
         )
         result = self.db_session.exec(stmt).one_or_none()
         return result if result else None
+
+    def get_period_for_security(
+        self, start: date, end: date, security_id: int
+    ) -> List[OHLCVDaily]:
+        stmt = select(OHLCVDaily).where(
+            OHLCVDaily.security_id == security_id,
+            OHLCVDaily.candle_date >= start,
+            OHLCVDaily.candle_date <= end,
+        )
+        return self.db_session.exec(stmt).all()
