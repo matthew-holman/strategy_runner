@@ -17,12 +17,6 @@ WAYBACK_API = (
 )
 
 
-def _fetch_html(url: str) -> str:
-    response = requests.get(url, verify=certifi.where())
-    response.raise_for_status()
-    return response.text
-
-
 def get_latest_snapshot_html() -> str:
     """Fetch the live Wikipedia page HTML for the S&P 500 index."""
     return _fetch_html(WIKI_URL)
@@ -55,6 +49,9 @@ def extract_constituents(html: str) -> list[dict]:
     )[0]
     df = _rename_columns(df)
 
+    # Normalize ticker symbols to Yahoo format
+    df["symbol"] = df["symbol"].apply(_normalize_ticker_symbol)
+
     return df[
         ["symbol", "company_name", "gics_sector", "gics_sub_industry", "cik"]
     ].to_dict(orient="records")
@@ -74,3 +71,15 @@ def _rename_columns(df: pd.DataFrame) -> pd.DataFrame:
         col: target for col, target in column_mapping.items() if col in df.columns
     }
     return df.rename(columns=rename_mapping)
+
+
+def _normalize_ticker_symbol(symbol: str) -> str:
+    """Convert symbol from Wikipedia format with dots (e.g., BRK.B) to Yahoo
+    Finance format with dashes (e.g., BRK-B)."""
+    return symbol.replace(".", "-")
+
+
+def _fetch_html(url: str) -> str:
+    response = requests.get(url, verify=certifi.where())
+    response.raise_for_status()
+    return response.text
