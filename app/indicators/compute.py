@@ -2,7 +2,9 @@ from datetime import date
 
 import pandas as pd
 
+from indicators.exceptions import InsufficientOHLCVDataError
 from sqlmodel import Session
+from utils import Log
 
 from app.indicators.atr import atr
 from app.indicators.avg_volume import avg_volume
@@ -48,9 +50,14 @@ def compute_all_indicators(
     df = _load_ohlcv_df(security_id, lookback_date, compute_date, session)
 
     if df.empty or len(df) < TRADING_DAYS_REQUIRED:
-        # TODO add a proper handling mechanism for this, raise an event, add job to queue etc etc
-        raise RuntimeError(
-            f"Gaps in data for security with id {security_id} between {lookback_date} and {compute_date}"
+        Log.warning(
+            f"Insufficient OHLCV data for indicators: security_id={security_id}, "
+            f"from={lookback_date}, to={compute_date}, rows={len(df)}"
+        )
+        raise InsufficientOHLCVDataError(
+            security_id=security_id,
+            start_date=lookback_date,
+            end_date=compute_date,
         )
 
     df = df.sort_values("candle_date").reset_index(drop=True)

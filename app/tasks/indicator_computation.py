@@ -7,8 +7,10 @@ from app.core.db import get_db
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.indicators.compute import compute_all_indicators
+from app.indicators.exceptions import InsufficientOHLCVDataError
 from app.models.stock_index_constituent import SP500
 from app.models.technical_indicator import TechnicalIndicator
+from app.services.missing_ohlcv_data_event_service import MissingOHLCVDataEventService
 from app.utils.log import Log
 
 
@@ -48,15 +50,18 @@ def compute_daily_indicators_for_all_securities(
                 continue
 
             try:
-                df = compute_all_indicators(
-                    security_id=security.id,
-                    compute_date=compute_date,
-                    session=db_session,
-                )
-
-                if df.empty:
-                    log.warning(
-                        f"No indicators computed for {security.id} on {compute_date}"
+                try:
+                    df = compute_all_indicators(
+                        security_id=security.id,
+                        compute_date=compute_date,
+                        session=db_session,
+                    )
+                except InsufficientOHLCVDataError as e:
+                    missing_data_event_service = MissingOHLCVDataEventService(
+                        db_session
+                    )
+                    missing_data_event_service.emit(
+                        e.security_id, e.start_date, e.end_date
                     )
                     continue
 

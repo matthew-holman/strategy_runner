@@ -106,6 +106,11 @@ def map_ic_objects(
     ic_objects = []
     for record in records:
         security = security_handler.get_or_create(record)
+
+        if security is None:
+            Log.warning(f"Security {record["symbol"]} could not be created")
+            continue
+
         ic_objects.append(
             StockIndexConstituentCreate(
                 index_name=SP500,

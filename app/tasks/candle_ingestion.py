@@ -2,13 +2,17 @@ import time
 
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from services.missing_ohlcv_data_event_service import MissingOHLCVDataEventService
+from sqlmodel import Session
 
 from app.core.db import get_db
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.handlers.security import SecurityHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.models.ohlcv_daily import OHLCVDailyCreate
+from app.models.security import Security
 from app.models.stock_index_constituent import SP500
 from app.services.market_data_service import MarketDataService
 from app.utils import Log
@@ -59,14 +63,26 @@ def daily_candle_fetch():
                     )
 
 
-def historical_candle_backfill():
+def fix_historical_gaps():
+    with next(get_db()) as db_session:
+        missing_data_event_service = MissingOHLCVDataEventService(db_session)
+        for event in missing_data_event_service.get_pending():
+            _fetch_history_for_security(
+                db_session=db_session,
+                security_id=event.security_id,
+                start_date=event.start_date,
+                end_date=event.end_date,
+            )
+            missing_data_event_service.mark_handled(event.id)
+        db_session.commit()
 
+
+def historical_candle_backfill():
     with next(get_db()) as db_session:
         ic_handler = StockIndexConstituentHandler(db_session)
-        ohlcv_handler = OHLCVDailyHandler(db_session)
         security_handler = SecurityHandler(db_session)
+        ohlcv_handler = OHLCVDailyHandler(db_session)
 
-        # From: earliest snapshot date
         oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
         today = date.today()
 
@@ -75,43 +91,46 @@ def historical_candle_backfill():
         all_securities = security_handler.get_all()
 
         for security in all_securities:
-            # To: earliest candle date for this security (or today if none)
             to_date = ohlcv_handler.get_earliest_candle_date(security.id) or today
             if to_date <= oldest_snapshot_date:
-                Log.info(
-                    f"Skipping {security.symbol}: candles already cover full range."
-                )
+                Log.info(f"Skipping {security.symbol}: already backfilled")
                 continue
 
             Log.info(
                 f"Backfilling {security.symbol} from {oldest_snapshot_date} to {to_date}"
             )
+            _fetch_and_store_ohlcv_for_security(
+                db_session, security, oldest_snapshot_date, to_date
+            )
 
-            # Chunked requests
-            for chunk_start, chunk_end in _chunk_date_range(
-                oldest_snapshot_date, to_date, timedelta(days=365)
-            ):
-                Log.debug(
-                    f"Fetching {security.symbol} from {chunk_start} to {chunk_end}"
-                )
-                time.sleep(2)  # don't wanna get rate limited
 
-                records = MarketDataService.fetch_ohlcv_history(
-                    security.symbol, chunk_start, chunk_end
-                )
-                if not records:
-                    Log.warning(
-                        f"No OHLCV data returned for {security.symbol} from {chunk_start} to {chunk_end}"
-                    )
-                    continue
+def _fetch_history_for_security(
+    db_session: Session,
+    security_id: int,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+):
+    ic_handler = StockIndexConstituentHandler(db_session)
+    security_handler = SecurityHandler(db_session)
+    ohlcv_handler = OHLCVDailyHandler(db_session)
 
-                candles = _map_ohlcv_objects(records, security.id)
-                ohlcv_handler.save_all(candles)
-                db_session.commit()
+    security = security_handler.get_by_id(security_id)
+    if not security:
+        Log.error(f"Security with id={security_id} not found")
+        return
 
-                Log.info(
-                    f"Inserted {len(candles)} records for {security.symbol} from {chunk_start} to {chunk_end}"
-                )
+    if start_date is None:
+        start_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
+
+    if end_date is None:
+        end_date = ohlcv_handler.get_earliest_candle_date(security_id) or date.today()
+
+    if end_date <= start_date:
+        Log.info(f"{security.symbol} already fully backfilled.")
+        return
+
+    Log.info(f"Fetching {security.symbol} from {start_date} to {end_date}")
+    _fetch_and_store_ohlcv_for_security(db_session, security, start_date, end_date)
 
 
 def _map_ohlcv_objects(records: List[Dict], security_id: int) -> List[OHLCVDailyCreate]:
@@ -146,3 +165,35 @@ def _chunk_date_range(start: date, end: date, chunk_size: timedelta):
 
 def _is_weekend(d=date.today()):
     return d.weekday() > 4
+
+
+def _fetch_and_store_ohlcv_for_security(
+    db_session,
+    security: Security,
+    start_date: date,
+    end_date: date,
+    chunk_size: timedelta = timedelta(days=365),
+):
+    ohlcv_handler = OHLCVDailyHandler(db_session)
+
+    for chunk_start, chunk_end in _chunk_date_range(start_date, end_date, chunk_size):
+        Log.debug(f"Fetching {security.symbol} from {chunk_start} to {chunk_end}")
+        time.sleep(2)
+
+        records = MarketDataService.fetch_ohlcv_history(
+            security.symbol, chunk_start, chunk_end
+        )
+
+        if not records:
+            Log.warning(
+                f"No data for {security.symbol} from {chunk_start} to {chunk_end}"
+            )
+            continue
+
+        candles = _map_ohlcv_objects(records, security.id)
+        ohlcv_handler.save_all(candles)
+        db_session.commit()
+
+        Log.info(
+            f"Inserted {len(candles)} records for {security.symbol} from {chunk_start} to {chunk_end}"
+        )

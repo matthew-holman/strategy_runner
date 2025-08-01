@@ -2,7 +2,7 @@
 
 import sys
 
-from app.tasks.candle_ingestion import daily_candle_fetch
+from app.tasks.candle_ingestion import daily_candle_fetch, fix_historical_gaps
 from app.tasks.indicator_computation import compute_daily_indicators_for_all_securities
 from app.tasks.sp500_ingestion import daily_sp500_sync
 from app.utils.log import Log
@@ -17,6 +17,11 @@ def main():
     try:
         Log.info("Running daily_sp500_sync to check S&P500 constituents...")
         daily_sp500_sync()
+
+        Log.info(
+            "Running historical backfill to fill gaps identified in the previous run."
+        )
+        fix_historical_gaps()
 
         Log.info("Running daily_candle_fetch to pull daily ohlcv data...")
         daily_candle_fetch()
