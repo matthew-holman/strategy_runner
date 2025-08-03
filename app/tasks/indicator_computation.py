@@ -3,15 +3,19 @@ from typing import Optional
 
 import pandas as pd
 
+from handlers.security import SecurityHandler
+
 from app.core.db import get_db
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
-from app.indicators.compute import compute_all_indicators
+from app.indicators.compute import compute_indicators_for_range
 from app.indicators.exceptions import InsufficientOHLCVDataError
 from app.models.stock_index_constituent import SP500
 from app.models.technical_indicator import TechnicalIndicator
-from app.services.missing_ohlcv_data_event_service import MissingOHLCVDataEventService
 from app.utils.log import Log
+from app.utils.trading_calendar import (
+    get_all_trading_days_between,
+)
 
 
 def compute_daily_indicators_for_all_securities(
@@ -23,7 +27,7 @@ def compute_daily_indicators_for_all_securities(
     Args:
         compute_date: The date to compute indicators for (default: today).
     """
-    log = Log.setup("trading-bot", "indicator-task")
+    log = Log.setup("trading-bot", "daily-indicator-computation")
     log.info(f"Running indicator update for {compute_date}")
 
     with next(get_db()) as db_session:
@@ -51,28 +55,114 @@ def compute_daily_indicators_for_all_securities(
 
             try:
                 try:
-                    df = compute_all_indicators(
+                    df = compute_indicators_for_range(
                         security_id=security.id,
-                        compute_date=compute_date,
+                        start_date=compute_date,
+                        end_date=compute_date,
                         session=db_session,
                     )
                 except InsufficientOHLCVDataError as e:
-                    missing_data_event_service = MissingOHLCVDataEventService(
-                        db_session
-                    )
-                    missing_data_event_service.emit(
-                        e.security_id, e.start_date, e.end_date
+                    Log.warning(
+                        f"Insufficient OHLCV data for indicators: security_id={e.security_id}, "
+                        f"from={e.start_date}, to={e.end_date}"
                     )
                     continue
 
-                model = _map_indicators_df_to_model(df.to_dict())
-                technical_indicator_handler.save_all([model])
+                models = [
+                    _map_indicators_df_to_model(
+                        row._asdict() if hasattr(row, "_asdict") else row
+                    )
+                    for _, row in df.iterrows()
+                ]
+
+                technical_indicator_handler.save_all(models)
                 db_session.commit()
 
             except Exception as e:
                 log.error(
                     f"Failed to compute indicators for {security.symbol} with id {security.id}: {e}"
                 )
+
+
+def heal_missing_technical_indicators() -> None:
+
+    log = Log.setup("trading-bot", "healing-indicator-computation")
+
+    with next(get_db()) as db_session:
+        ic_handler = StockIndexConstituentHandler(db_session)
+        security_handler = SecurityHandler(db_session)
+        technical_indicator_handler = TechnicalIndicatorHandler(db_session)
+
+        oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
+
+        today = date.today()
+        all_securities = security_handler.get_all()
+
+        for security in all_securities:
+
+            if security.exchange is None or security.first_trade_date is None:
+                Log.warning(f"skipping {security.symbol} missing metadata.")
+                continue
+
+            try:
+
+                period_start = (
+                    oldest_snapshot_date
+                    if oldest_snapshot_date > security.first_trade_date
+                    else security.first_trade_date
+                )
+
+                trading_days = set(
+                    get_all_trading_days_between(
+                        exchange=security.exchange,
+                        start=period_start,
+                        end=today,
+                    )
+                )
+
+                existing_dates = technical_indicator_handler.get_dates_for_security(
+                    security.id
+                )
+                missing_dates = sorted(list(trading_days - existing_dates))
+
+                if not missing_dates:
+                    log.info(f"No indicator gaps for {security.symbol}")
+                    continue
+
+                log.info(
+                    f"Found {len(missing_dates)} indicator gaps for {security.symbol} "
+                    f"between {min(missing_dates)} and {max(missing_dates)}."
+                )
+
+                try:
+                    df = compute_indicators_for_range(
+                        security_id=security.id,
+                        start_date=min(missing_dates),
+                        end_date=max(missing_dates),
+                        session=db_session,
+                    )
+                except InsufficientOHLCVDataError as e:
+                    log.warning(
+                        f"Insufficient OHLCV data for indicators: security_id={e.security_id}, "
+                        f"from={e.start_date}, to={e.end_date}"
+                    )
+                    continue
+
+                if df.empty:
+                    continue
+
+                models = [
+                    _map_indicators_df_to_model(
+                        row._asdict() if hasattr(row, "_asdict") else row
+                    )
+                    for _, row in df.iterrows()
+                ]
+
+                technical_indicator_handler.save_all(models)
+                db_session.commit()
+
+            except Exception as e:
+                log.error(f"Failed healing indicators for {security.symbol}: {e}")
 
 
 def _map_indicators_df_to_model(computed_values: dict) -> TechnicalIndicator:

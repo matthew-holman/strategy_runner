@@ -49,3 +49,12 @@ class OHLCVDailyHandler:
             OHLCVDaily.candle_date <= end,
         )
         return self.db_session.exec(stmt).all()
+
+    def get_dates_for_security(self, security_id: int) -> set[date]:
+        stmt = (
+            select(OHLCVDaily.candle_date)
+            .where(OHLCVDaily.security_id == security_id)
+            .distinct()
+        )
+        result = self.db_session.exec(stmt).all()
+        return {row for row in result if row is not None}

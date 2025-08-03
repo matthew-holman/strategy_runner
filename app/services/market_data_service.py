@@ -1,9 +1,14 @@
-from datetime import date
-from typing import Dict, List, Optional
+from datetime import date, datetime, timezone
+from typing import Dict, List, Optional, TypedDict
 
 import yfinance as yf
 
 from app.utils import Log
+
+
+class TickerMetadata(TypedDict):
+    first_trade_date: Optional[date]
+    exchange: Optional[str]
 
 
 class MarketDataService:
@@ -47,3 +52,32 @@ class MarketDataService:
         df.reset_index(inplace=True)
 
         return df.to_dict(orient="records")
+
+    @staticmethod
+    def fetch_ticker_metadata(security_symbol: str) -> TickerMetadata:
+        try:
+            yf_ticker = yf.Ticker(security_symbol)
+            info = yf_ticker.info  # This triggers an API call
+
+            # Parse first trade date
+            ms = info.get("firstTradeDateMilliseconds")
+            first_trade_date = (
+                datetime.fromtimestamp(ms / 1000, timezone.utc).date()
+                if ms is not None
+                else None
+            )
+
+            # Get exchange
+            exchange = info.get("fullExchangeName") or info.get("exchange")
+
+            return {
+                "first_trade_date": first_trade_date,
+                "exchange": exchange,
+            }
+
+        except Exception as e:
+            Log.warning(f"Failed to fetch metadata for {security_symbol}: {e}")
+            return {
+                "first_trade_date": None,
+                "exchange": None,
+            }

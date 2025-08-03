@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from freezegun import freeze_time
-from indicators.compute import compute_all_indicators
+from indicators.compute import compute_indicators_for_range
 from models.ohlcv_daily import OHLCVDaily
 from sqlmodel import Session
 
@@ -40,8 +40,11 @@ def test_compute_all_indicators_raises_on_insufficient_rows(mock_handler_cls):
     compute_date = date(2024, 12, 31)
 
     with pytest.raises(RuntimeError) as exc_info:
-        compute_all_indicators(
-            security_id=1, compute_date=compute_date, session=session
+        compute_indicators_for_range(
+            security_id=1,
+            start_date=compute_date,
+            end_date=date.today(),
+            session=session,
         )
 
     assert "Gaps in data" in str(exc_info.value)

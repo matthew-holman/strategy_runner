@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
-from sqlmodel import Session, select
+from sqlmodel import Session, or_, select
 
 from app.models.security import Security
 
@@ -10,12 +10,11 @@ from app.models.security import Security
 class SecurityHandler:
     db_session: Session
 
-    def get_or_create(self, record: dict) -> Optional[Security]:
+    def get_or_create(self, record: dict) -> Security:
         stmt = select(Security).where(Security.symbol == record["symbol"])
         security = self.db_session.exec(stmt).first()
         if security:
             return security
-        return None
 
         new_security = Security.model_validate(record)
         self.db_session.add(new_security)
@@ -32,3 +31,12 @@ class SecurityHandler:
         if security:
             return security
         return None
+
+    def get_with_missing_metadata(self) -> List[Security]:
+        stmt = select(Security).where(
+            or_(
+                Security.first_trade_date.is_(None),  # type: ignore[union-attr]
+                Security.exchange.is_(None),  # type: ignore[union-attr]
+            )
+        )
+        return list(self.db_session.exec(stmt))

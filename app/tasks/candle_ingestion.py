@@ -2,10 +2,14 @@ import time
 
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from services.missing_ohlcv_data_event_service import MissingOHLCVDataEventService
+from indicators.compute import TRADING_DAYS_REQUIRED
 from sqlmodel import Session
+from utils.trading_calendar import (
+    get_all_trading_days_between,
+    get_nth_previous_trading_day,
+)
 
 from app.core.db import get_db
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
@@ -63,74 +67,86 @@ def daily_candle_fetch():
                     )
 
 
-def fix_historical_gaps():
-    with next(get_db()) as db_session:
-        missing_data_event_service = MissingOHLCVDataEventService(db_session)
-        for event in missing_data_event_service.get_pending():
-            _fetch_history_for_security(
-                db_session=db_session,
-                security_id=event.security_id,
-                start_date=event.start_date,
-                end_date=event.end_date,
-            )
-            missing_data_event_service.mark_handled(event.id)
-        db_session.commit()
-
-
-def historical_candle_backfill():
+def heal_missing_candle_data() -> None:
+    """
+    Identify and backfill missing OHLCV data per security by comparing against expected trading days.
+    """
     with next(get_db()) as db_session:
         ic_handler = StockIndexConstituentHandler(db_session)
         security_handler = SecurityHandler(db_session)
-        ohlcv_handler = OHLCVDailyHandler(db_session)
 
+        # Get the oldest valid backfill window
         oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
         today = date.today()
 
-        # TODO, when I include other indexes such as the nasdaq I need to limit this it SP500 related securities
-        # TODO: Switch to streaming query (e.g., with yield_per) when the number of securities grows
         all_securities = security_handler.get_all()
 
         for security in all_securities:
-            to_date = ohlcv_handler.get_earliest_candle_date(security.id) or today
-            if to_date <= oldest_snapshot_date:
-                Log.info(f"Skipping {security.symbol}: already backfilled")
-                continue
+            try:
 
-            Log.info(
-                f"Backfilling {security.symbol} from {oldest_snapshot_date} to {to_date}"
-            )
-            _fetch_and_store_ohlcv_for_security(
-                db_session, security, oldest_snapshot_date, to_date
-            )
+                if security.exchange is None or security.first_trade_date is None:
+                    Log.warning(f"skipping {security.symbol} missing metadata.")
+                    continue
+
+                oldest_required_candle_date = get_nth_previous_trading_day(
+                    exchange=security.exchange,
+                    as_of=oldest_snapshot_date,
+                    lookback_days=TRADING_DAYS_REQUIRED,
+                )
+
+                period_start = (
+                    oldest_required_candle_date
+                    if oldest_required_candle_date > security.first_trade_date
+                    else security.first_trade_date
+                )
+
+                # find gaps in the data
+                missing_dates = _find_missing_trading_days(
+                    security_id=security.id,
+                    exchange=security.exchange,
+                    start_date=period_start,
+                    end_date=today,
+                    session=db_session,
+                )
+
+                if not missing_dates:
+                    Log.info(f"No gaps found for {security.symbol}")
+                    continue
+
+                Log.info(
+                    f"Found {len(missing_dates)} missing candles for {security.symbol} b"
+                    f"etween {min(missing_dates)} and {max(missing_dates)}"
+                )
+
+                # fill gaps in the data
+                _fetch_and_store_ohlcv_for_security(
+                    db_session,
+                    security,
+                    start_date=min(missing_dates),
+                    end_date=max(missing_dates),
+                )
+
+            except Exception as e:
+                Log.error(f"Failed healing {security.symbol}: {e}")
 
 
-def _fetch_history_for_security(
-    db_session: Session,
-    security_id: int,
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-):
-    ic_handler = StockIndexConstituentHandler(db_session)
-    security_handler = SecurityHandler(db_session)
-    ohlcv_handler = OHLCVDailyHandler(db_session)
+def _find_missing_trading_days(
+    security_id: int, exchange: str, start_date: date, end_date: date, session: Session
+) -> List[date]:
+    """
+    Compare trading calendar to existing candles in DB, and return missing trading days.
+    """
 
-    security = security_handler.get_by_id(security_id)
-    if not security:
-        Log.error(f"Security with id={security_id} not found")
-        return
+    # Step 1: Get valid trading days from calendar
+    trading_days = set(get_all_trading_days_between(exchange, start_date, end_date))
 
-    if start_date is None:
-        start_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
+    # Step 2: Get existing candle dates from DB
+    handler = OHLCVDailyHandler(session)
+    existing_dates = set(handler.get_dates_for_security(security_id))
 
-    if end_date is None:
-        end_date = ohlcv_handler.get_earliest_candle_date(security_id) or date.today()
-
-    if end_date <= start_date:
-        Log.info(f"{security.symbol} already fully backfilled.")
-        return
-
-    Log.info(f"Fetching {security.symbol} from {start_date} to {end_date}")
-    _fetch_and_store_ohlcv_for_security(db_session, security, start_date, end_date)
+    # Step 3: Subtract and return missing ones
+    missing_days = sorted(list(trading_days - existing_dates))
+    return missing_days
 
 
 def _map_ohlcv_objects(records: List[Dict], security_id: int) -> List[OHLCVDailyCreate]:

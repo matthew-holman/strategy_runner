@@ -1,7 +1,11 @@
 from datetime import date
-from typing import Dict
+from typing import Dict, List
 
-from app.utils.calendars.calendar_strategies import NyseCalendar, TradingCalendar
+from app.utils.calendars.calendar_strategies import (
+    CfeCalendar,
+    NyseCalendar,
+    TradingCalendar,
+)
 
 
 class UnsupportedExchangeError(Exception):
@@ -11,7 +15,11 @@ class UnsupportedExchangeError(Exception):
 # Calendar strategy registry
 _CALENDAR_REGISTRY: Dict[str, TradingCalendar] = {
     "NYSE": NyseCalendar(),
-    # "NASDAQ_STO": Not yet implemented
+    "NASDAQGS": NyseCalendar(),  # in pandas_market_calendars NASDAQ calendars are a alias of the NYSE cal
+    "NASDAQGM": NyseCalendar(),
+    "NASDAQCM": NyseCalendar(),
+    "NYSEARCA": NyseCalendar(),
+    "CBOE US": CfeCalendar(),
 }
 
 
@@ -37,3 +45,11 @@ def get_nth_previous_trading_day(
         lookback_days + 1
     )  # we need to pad by a day to get correct result
     return calendar.get_nth_previous_trading_day(as_of, lookback_adjusted)
+
+
+def get_all_trading_days_between(exchange: str, start: date, end: date) -> List[date]:
+    calendar = _CALENDAR_REGISTRY.get(exchange.upper())
+    if not calendar:
+        raise UnsupportedExchangeError(f"Exchange '{exchange}' is not supported yet")
+
+    return calendar.get_trading_days_between(start, end)

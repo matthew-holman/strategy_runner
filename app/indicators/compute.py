@@ -2,14 +2,13 @@ from datetime import date
 
 import pandas as pd
 
-from indicators.exceptions import InsufficientOHLCVDataError
 from sqlmodel import Session
-from utils import Log
 
 from app.indicators.atr import atr
 from app.indicators.avg_volume import avg_volume
 from app.indicators.close_position import close_position
 from app.indicators.ema import ema
+from app.indicators.exceptions import InsufficientOHLCVDataError
 from app.indicators.high_low import breakout_high_n, breakout_low_n
 from app.indicators.macd import macd
 from app.indicators.rsi import rsi
@@ -23,44 +22,40 @@ TRADING_DAYS_REQUIRED = 200
 EXCHANGE = "NYSE"  # For now, hardcoded until Security model includes exchange
 
 
-def compute_all_indicators(
-    security_id: int, compute_date: date, session: Session
+def compute_indicators_for_range(
+    security_id: int, start_date: date, end_date: date, session: Session
 ) -> pd.DataFrame:
     """
     Compute indicators for a given security using OHLCV data from start_date up to as_of.
 
     Args:
         security_id: Ticker or ID of the security
-        compute_date: Date we are computing indicators for
+        start_date: Date we are computing indicators for
         session: Active DB session
 
     Returns:
         A DataFrame with measurement_date, security_id, and all computed indicators
+        :param end_date:
     """
 
     try:
-        lookback_date = get_nth_previous_trading_day(
-            EXCHANGE, as_of=compute_date, lookback_days=TRADING_DAYS_REQUIRED
+        lookback_start = get_nth_previous_trading_day(
+            exchange=EXCHANGE, as_of=start_date, lookback_days=TRADING_DAYS_REQUIRED
         )
     except UnsupportedExchangeError as e:
         raise RuntimeError(
             f"Indicator computation failed for {security_id}: {str(e)}"
         ) from e
 
-    df = _load_ohlcv_df(security_id, lookback_date, compute_date, session)
+    df = _load_ohlcv_df(security_id, lookback_start, end_date, session)
+    df = df.sort_values("candle_date").reset_index(drop=True)
 
     if df.empty or len(df) < TRADING_DAYS_REQUIRED:
-        Log.warning(
-            f"Insufficient OHLCV data for indicators: security_id={security_id}, "
-            f"from={lookback_date}, to={compute_date}, rows={len(df)}"
-        )
         raise InsufficientOHLCVDataError(
             security_id=security_id,
-            start_date=lookback_date,
-            end_date=compute_date,
+            start_date=lookback_start,
+            end_date=end_date,
         )
-
-    df = df.sort_values("candle_date").reset_index(drop=True)
 
     indicators = pd.DataFrame()
     indicators["measurement_date"] = df["candle_date"]
@@ -89,7 +84,11 @@ def compute_all_indicators(
 
     indicators["close_position"] = close_position(df)
 
-    return indicators.iloc[-1]
+    # Return only the rows between start_date and end_date
+    return indicators[
+        (indicators["measurement_date"] >= start_date)
+        & (indicators["measurement_date"] <= end_date)
+    ]
 
 
 def _load_ohlcv_df(

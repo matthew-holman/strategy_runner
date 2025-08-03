@@ -1,7 +1,7 @@
 import logging
 import sys
 
-LOG_NAME = "etsy-keyword-logs"
+LOG_NAME = "trading-bot-stock-picker"
 
 
 class Log:
