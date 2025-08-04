@@ -1,12 +1,17 @@
+import importlib
+import pkgutil
+
 from typing import Generator
 
 import pytest
 
-from core.db import get_db
 from sqlalchemy_utils import create_database, database_exists, drop_database
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.testclient import TestClient
 
+import app.models
+
+from app.core.db import get_db
 from app.core.settings import get_settings
 from app.utils import Log
 from main import get_app
@@ -42,6 +47,10 @@ def setup_db(connection, request) -> None:
     then proceeds to drop all the created tables after all tests
     have finished running.
     """
+
+    # Import all model modules to ensure SQLModel.metadata is populated
+    for _, module_name, _ in pkgutil.iter_modules(app.models.__path__):
+        importlib.import_module(f"app.models.{module_name}")
 
     # SQLModel.metadata.bind = connection
     SQLModel.metadata.create_all(bind=connection)

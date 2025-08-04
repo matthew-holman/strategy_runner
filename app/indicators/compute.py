@@ -35,6 +35,9 @@ def compute_indicators_for_range(
 
     Returns:
         A DataFrame with measurement_date, security_id, and all computed indicators
+        :param session:
+        :param start_date:
+        :param security_id:
         :param end_date:
     """
 

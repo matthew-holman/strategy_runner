@@ -114,8 +114,8 @@ def heal_missing_candle_data() -> None:
                     continue
 
                 Log.info(
-                    f"Found {len(missing_dates)} missing candles for {security.symbol} b"
-                    f"etween {min(missing_dates)} and {max(missing_dates)}"
+                    f"Found {len(missing_dates)} missing candles for {security.symbol}"
+                    f"between {min(missing_dates)} and {max(missing_dates)}"
                 )
 
                 # fill gaps in the data
@@ -170,6 +170,9 @@ def _map_ohlcv_objects(records: List[Dict], security_id: int) -> List[OHLCVDaily
 
 
 def _chunk_date_range(start: date, end: date, chunk_size: timedelta):
+    if start == end:
+        return [(start, end)]  # handle common single-day case
+
     chunks = []
     cursor = start
     while cursor < end:
