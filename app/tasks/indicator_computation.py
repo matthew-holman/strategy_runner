@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, timedelta
+from decimal import InvalidOperation
 from typing import Optional
 
 import pandas as pd
@@ -95,7 +96,7 @@ def heal_missing_technical_indicators() -> None:
 
         oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
 
-        today = date.today()
+        yesterday = date.today() - timedelta(days=1)
         all_securities = security_handler.get_all()
 
         for security in all_securities:
@@ -116,7 +117,7 @@ def heal_missing_technical_indicators() -> None:
                     get_all_trading_days_between(
                         exchange=security.exchange,
                         start=period_start,
-                        end=today,
+                        end=yesterday,
                     )
                 )
 
@@ -161,6 +162,11 @@ def heal_missing_technical_indicators() -> None:
                 technical_indicator_handler.save_all(models)
                 db_session.commit()
 
+            except InvalidOperation as e:
+                # tb = traceback.format_exc()
+                log.error(
+                    f"Caught decimal error while processing {security.symbol}: {e}"
+                )
             except Exception as e:
                 log.error(f"Failed healing indicators for {security.symbol}: {e}")
 

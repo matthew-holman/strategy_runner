@@ -77,7 +77,7 @@ def heal_missing_candle_data() -> None:
 
         # Get the oldest valid backfill window
         oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
-        today = date.today()
+        yesterday = date.today() - timedelta(days=1)
 
         all_securities = security_handler.get_all()
 
@@ -105,7 +105,7 @@ def heal_missing_candle_data() -> None:
                     security_id=security.id,
                     exchange=security.exchange,
                     start_date=period_start,
-                    end_date=today,
+                    end_date=yesterday,
                     session=db_session,
                 )
 

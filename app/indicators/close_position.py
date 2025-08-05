@@ -8,8 +8,10 @@ def close_position(df: pd.DataFrame) -> pd.Series:
     Formula:
         (Close - Low) / (High - Low)
 
+    If High == Low, return 0.5 for that row.
+
     Returns:
-        Series of values in [0, 1], or 0.5 if High == Low.
+        Series of float values in [0, 1], or 0.5 if High == Low.
     """
     required = {"high", "low", "close"}
     if not required.issubset(df.columns):
@@ -20,7 +22,16 @@ def close_position(df: pd.DataFrame) -> pd.Series:
     close = df["close"]
 
     range_ = high - low
-    close_pos = (close - low) / range_
 
-    # Handle divide-by-zero (High == Low) → return 0.5
-    return close_pos.fillna(0.5)
+    # cast to float, decimal input incompatible with float
+    close_pos = pd.Series(index=df.index, dtype="float64")
+
+    nonzero_mask = range_ != 0
+    result = (close[nonzero_mask] - low[nonzero_mask]) / range_[nonzero_mask]
+
+    # Cast result to float before assignment to avoid dtype warning
+    close_pos[nonzero_mask] = result.astype(float)
+
+    close_pos[~nonzero_mask] = 0.5
+
+    return close_pos
