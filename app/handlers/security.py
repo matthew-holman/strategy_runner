@@ -4,6 +4,7 @@ from typing import List, Optional, Sequence
 from sqlmodel import Session, or_, select
 
 from app.models.security import Security
+from app.models.stock_index_constituent import StockIndexConstituent
 
 
 @dataclass
@@ -40,3 +41,10 @@ class SecurityHandler:
             )
         )
         return list(self.db_session.exec(stmt))
+
+    def get_by_snapshot_id(self, snapshot_id: int) -> List[Security]:
+        stmt = select(Security, StockIndexConstituent).where(
+            Security.id == StockIndexConstituent.security_id,
+            StockIndexConstituent.snapshot_id == snapshot_id,
+        )
+        return [security for security, _ in self.db_session.exec(stmt)]

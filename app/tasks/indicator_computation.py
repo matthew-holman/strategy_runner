@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 from decimal import InvalidOperation
 from typing import Optional
 
@@ -13,6 +13,7 @@ from app.indicators.compute import compute_indicators_for_range
 from app.indicators.exceptions import InsufficientOHLCVDataError
 from app.models.stock_index_constituent import SP500
 from app.models.technical_indicator import TechnicalIndicator
+from app.utils.datetime_utils import yesterday
 from app.utils.log import Log
 from app.utils.trading_calendar import (
     get_all_trading_days_between,
@@ -96,7 +97,6 @@ def heal_missing_technical_indicators() -> None:
 
         oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
 
-        yesterday = date.today() - timedelta(days=1)
         all_securities = security_handler.get_all()
 
         for security in all_securities:
@@ -117,12 +117,14 @@ def heal_missing_technical_indicators() -> None:
                     get_all_trading_days_between(
                         exchange=security.exchange,
                         start=period_start,
-                        end=yesterday,
+                        end=yesterday(),
                     )
                 )
 
-                existing_dates = technical_indicator_handler.get_dates_for_security(
-                    security.id
+                existing_dates = (
+                    technical_indicator_handler.get_dates_with_indicators_for_security(
+                        security.id
+                    )
                 )
                 missing_dates = sorted(list(trading_days - existing_dates))
 

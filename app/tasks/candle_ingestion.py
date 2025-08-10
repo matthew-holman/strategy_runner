@@ -6,10 +6,6 @@ from typing import Dict, List
 
 from indicators.compute import TRADING_DAYS_REQUIRED
 from sqlmodel import Session
-from utils.trading_calendar import (
-    get_all_trading_days_between,
-    get_nth_previous_trading_day,
-)
 
 from app.core.db import get_db
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
@@ -20,6 +16,11 @@ from app.models.security import Security
 from app.models.stock_index_constituent import SP500
 from app.services.market_data_service import MarketDataService
 from app.utils import Log
+from app.utils.datetime_utils import yesterday
+from app.utils.trading_calendar import (
+    get_all_trading_days_between,
+    get_nth_previous_trading_day,
+)
 
 
 def daily_candle_fetch():
@@ -34,37 +35,33 @@ def daily_candle_fetch():
 
         ohlcv_handler = OHLCVDailyHandler(db_session)
         today = date.today()
-        yesterday = today - timedelta(days=1)
 
-        if _is_weekend(yesterday):
-            Log.info("Yesterday was a weekend, no data to pull.")
-        else:
-            for index_constituent in index_constituents:
+        for index_constituent in index_constituents:
 
-                from_date = (
-                    ohlcv_handler.get_latest_candle_date(index_constituent.security.id)
-                    or yesterday
+            from_date = (
+                ohlcv_handler.get_latest_candle_date(index_constituent.security.id)
+                or yesterday()
+            )
+            if from_date >= today:
+                Log.info(
+                    f"No new data to fetch for {index_constituent.security.symbol} — up to date."
                 )
-                if from_date >= today:
-                    Log.info(
-                        f"No new data to fetch for {index_constituent.security.symbol} — up to date."
-                    )
-                    continue
+                continue
 
-                records = MarketDataService.fetch_ohlcv_history(
-                    index_constituent.security.symbol, from_date, today
+            records = MarketDataService.fetch_ohlcv_history(
+                index_constituent.security.symbol, from_date, today
+            )
+
+            if records:
+                daily_candles = _map_ohlcv_objects(
+                    records, index_constituent.security.id
                 )
-
-                if records:
-                    daily_candles = _map_ohlcv_objects(
-                        records, index_constituent.security.id
-                    )
-                    ohlcv_handler.save_all(daily_candles)
-                    db_session.commit()
-                    Log.info(
-                        f"Inserted {len(daily_candles)} daily OHLCV records for security "
-                        f"{index_constituent.security.company_name} from {from_date} to today"
-                    )
+                ohlcv_handler.save_all(daily_candles)
+                db_session.commit()
+                Log.info(
+                    f"Inserted {len(daily_candles)} daily OHLCV records for security "
+                    f"{index_constituent.security.company_name} from {from_date} to today"
+                )
 
 
 def heal_missing_candle_data() -> None:
@@ -77,7 +74,6 @@ def heal_missing_candle_data() -> None:
 
         # Get the oldest valid backfill window
         oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
-        yesterday = date.today() - timedelta(days=1)
 
         all_securities = security_handler.get_all()
 
@@ -105,7 +101,7 @@ def heal_missing_candle_data() -> None:
                     security_id=security.id,
                     exchange=security.exchange,
                     start_date=period_start,
-                    end_date=yesterday,
+                    end_date=yesterday(),
                     session=db_session,
                 )
 
@@ -115,7 +111,7 @@ def heal_missing_candle_data() -> None:
 
                 Log.info(
                     f"Found {len(missing_dates)} missing candles for {security.symbol}"
-                    f"between {min(missing_dates)} and {max(missing_dates)}"
+                    f" between {min(missing_dates)} and {max(missing_dates)}"
                 )
 
                 # fill gaps in the data
@@ -180,10 +176,6 @@ def _chunk_date_range(start: date, end: date, chunk_size: timedelta):
         chunks.append((cursor, chunk_end))
         cursor = chunk_end
     return chunks
-
-
-def _is_weekend(d=date.today()):
-    return d.weekday() > 4
 
 
 def _fetch_and_store_ohlcv_for_security(

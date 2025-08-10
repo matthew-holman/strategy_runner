@@ -19,7 +19,7 @@ from app.services.stock_index_service import (
 from app.utils import Log
 
 
-def daily_sp500_sync():
+def daily_sp500_sync() -> bool:
     html = get_latest_snapshot_html()
     records = extract_constituents(html)
     Log.info(f"{len(records)} records parsed from S&P 500 Wikipedia page.")
@@ -34,17 +34,23 @@ def daily_sp500_sync():
 
         if ic_handler.snapshot_matches_most_recent(SP500, snapshot_hash):
             Log.info("No changes detected in S&P 500 constituents — skipping insert.")
-            return
+
+            return False
 
         snapshot = ic_handler.save_snapshot(SP500, snapshot_hash, today)
 
-        ic_objects = map_ic_objects(records, security_handler, snapshot.id)
+        if snapshot is None or snapshot.id is None:
+            raise ValueError("Snapshot returned was empty")
+
+        ic_objects = _map_ic_objects(records, security_handler, snapshot.id)
         ic_handler.save_all(ic_objects)
 
         db_session.commit()
         Log.info(
             f"{len(ic_objects)} records inserted for {today} with hash {snapshot_hash}"
         )
+
+        return True
 
 
 def backfill_sp500_from_wayback():
@@ -87,7 +93,7 @@ def backfill_sp500_from_wayback():
                 continue
 
             snapshot = ic_handler.save_snapshot(SP500, snapshot_hash, snapshot_date)
-            ic_objects = map_ic_objects(records, security_handler, snapshot.id)
+            ic_objects = _map_ic_objects(records, security_handler, snapshot.id)
 
             ic_handler.save_all(ic_objects)
             db_session.commit()
@@ -98,7 +104,7 @@ def backfill_sp500_from_wayback():
             oldest_hash = snapshot_hash
 
 
-def map_ic_objects(
+def _map_ic_objects(
     records: List[Dict],
     security_handler: SecurityHandler,
     snapshot_id: int,

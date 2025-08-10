@@ -8,6 +8,13 @@ from app.models.base_model import BaseModel
 
 
 class OHLCVDailyBase(BaseModel, table=False):  # type: ignore[call-arg]
+    """
+    OHLCV (Open, High, Low, Close, Volume) data represents a security’s trading activity for a specific period,
+    typically a day.
+    It records the opening price, highest and lowest prices, closing price, and total traded volume, forming the
+    basis for most charting and technical analysis.
+    """
+
     candle_date: date = Field(index=True)
     open: Decimal = Field(max_digits=10, decimal_places=2)
     high: Decimal = Field(max_digits=10, decimal_places=2)

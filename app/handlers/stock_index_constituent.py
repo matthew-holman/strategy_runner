@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 from sqlmodel import Session, select
 
 from app.models.stock_index_constituent import (
+    SP500,
     StockIndexConstituent,
     StockIndexConstituentCreate,
 )
@@ -67,3 +68,17 @@ class StockIndexConstituentHandler:
         self.db_session.add(snapshot)
         self.db_session.flush()
         return snapshot
+
+    def get_relevant_snapshot_for_date(
+        self, measurement_date: date, index_name: str = SP500
+    ) -> Optional[StockIndexSnapshot]:
+        stmt = (
+            select(StockIndexSnapshot)
+            .where(
+                StockIndexSnapshot.snapshot_date <= measurement_date,
+                StockIndexSnapshot.index_name == index_name,
+            )
+            .order_by(StockIndexSnapshot.snapshot_date.desc())  # type: ignore[attr-defined]
+            .limit(1)
+        )
+        return self.db_session.exec(stmt).first()

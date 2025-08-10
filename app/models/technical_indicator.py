@@ -1,6 +1,7 @@
 from datetime import date
 from typing import Optional
 
+from pydantic import BaseModel as PydanticBase, Field as PydanticField
 from sqlmodel import Field
 
 from app.models.base_model import BaseModel
@@ -77,3 +78,36 @@ class TechnicalIndicator(TechnicalIndicatorBase, table=True):  # type: ignore[ca
 
 class StockIndexConstituentRead(TechnicalIndicatorBase):  # type: ignore[call-arg]
     pass
+
+
+class CombinedSignalRow(PydanticBase):
+    # --- Shared fields ---
+    security_id: int
+    measurement_date: date
+
+    # --- OHLCV fields ---
+    ohlcv_daily_id: Optional[int] = PydanticField(alias="id")
+    open: Optional[float]
+    high: Optional[float]
+    low: Optional[float]
+    close: Optional[float]
+    volume: Optional[int]
+
+    # --- Technical Indicators ---
+    sma_20: Optional[float]
+    sma_50: Optional[float]
+    sma_200: Optional[float]
+    ema_9: Optional[float]
+    ema_20: Optional[float]
+    rsi_14: Optional[float]
+    high_10d: Optional[float]
+    low_10d: Optional[float]
+    avg_vol_20d: Optional[float]
+    macd: Optional[float]
+    macd_signal: Optional[float]
+    macd_hist: Optional[float]
+    atr_14: Optional[float]
+    close_position: Optional[float]
+
+    # Optional: computed fields
+    strategy_score: Optional[float] = None

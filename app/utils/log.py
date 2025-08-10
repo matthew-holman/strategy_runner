@@ -6,7 +6,7 @@ LOG_NAME = "trading-bot-stock-picker"
 
 class Log:
     @staticmethod
-    def setup(application_name: str, log_name: str = LOG_NAME) -> logging.Logger:
+    def setup(log_name: str, application_name: str = LOG_NAME) -> logging.Logger:
         logger = logging.getLogger(log_name)
         if not logger.hasHandlers():
             formatter = logging.Formatter(

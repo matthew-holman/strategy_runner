@@ -1,0 +1,57 @@
+{
+  "strategy_id": "sma_pullback_buy",
+  "name": "20SMA Pullback with Volume + RSI Filter",
+  "filters": [
+    {
+      "indicator": "sma_50",
+      "comparison": "<",
+      "value": 1.0,
+      "comparison_field": "close",
+      "note": "Uptrend confirmation — price must be above SMA50"
+    },
+    {
+      "indicator": "sma_20",
+      "comparison": ">",
+      "value": 1.0,
+      "comparison_field": "close",
+      "note": "Pullback below SMA20"
+    },
+    {
+      "indicator": "rsi_14",
+      "comparison": "between",
+      "min": 40,
+      "max": 60,
+      "value": 0.0,
+      "note": "RSI should be strong but not overbought"
+    },
+    {
+      "indicator": "volume",
+      "comparison": ">",
+      "value": 1.5,
+      "comparison_field": "avg_vol_20d",
+      "note": "Volume spike confirmation"
+    }
+  ],
+  "ranking": [
+    {
+      "indicator": "rsi_14",
+      "function": "gaussian",
+      "center": 50,
+      "sigma": 10,
+      "weight": 0.3
+    },
+    {
+      "indicator": "volume",
+      "function": "log_ratio",
+      "denominator": "avg_vol_20d",
+      "weight": 0.4,
+      "max": 5
+    },
+    {
+      "indicator": "close_position",
+      "function": "linear",
+      "weight": 0.3
+    }
+  ],
+  "max_signals_per_day": 5
+}
