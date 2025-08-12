@@ -12,7 +12,7 @@ else
     exit 1
 fi
 
-# Resolve the daily_tasks.py script path
+# Resolve the eod_tasks.py script path
 TASK_SCRIPT="$REPO_ROOT/daily_tasks.py"  # adjust if location differs
 
 # Ensure the log directory exists

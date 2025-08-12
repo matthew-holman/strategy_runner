@@ -75,7 +75,7 @@ def test_apply_strategy_filters_basic_value_comparison():
     config = StrategyConfig(
         strategy_id="test",
         name="SMA rule",
-        filters=[
+        signal_filters=[
             FilterRule(
                 indicator="sma_50",
                 comparison=">",
@@ -104,7 +104,7 @@ def test_apply_strategy_filters_between():
     config = StrategyConfig(
         strategy_id="test",
         name="RSI range filter",
-        filters=[
+        signal_filters=[
             FilterRule(
                 indicator="rsi_14",
                 comparison="between",
@@ -134,7 +134,7 @@ def test_apply_strategy_filters_multiplier_of():
     config = StrategyConfig(
         strategy_id="test",
         name="Volume spike",
-        filters=[
+        signal_filters=[
             FilterRule(
                 indicator="volume",
                 comparison=">",

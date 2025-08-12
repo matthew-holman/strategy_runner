@@ -1,8 +1,10 @@
 from datetime import date
-from typing import Optional
+from decimal import Decimal
+from typing import List, Optional
 
-from sqlalchemy import CheckConstraint, ForeignKeyConstraint, UniqueConstraint
-from sqlmodel import Field, Relationship
+from sqlalchemy import CheckConstraint, ForeignKeyConstraint, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlmodel import Column, Field, Relationship
 
 from app.models.base_model import BaseModel
 from app.models.ohlcv_daily import OHLCVDaily
@@ -27,8 +29,19 @@ class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
         le=1.0,
         description="raw score from strategy logic before ranking weights",
     )
-    notes: Optional[str] = Field(
-        default=None, description="Short explanation of why it passed"
+    validated_at_open: Optional[bool] = Field(
+        default=None,
+        description="True/False after open validation; None if not yet validated",
+        index=True,
+    )
+    next_open_price: Optional[Decimal] = Field(  # use Decimal to avoid float drift
+        default=None,
+        description="Open price used during validation from the NEXT trading session",
+    )
+    validated_at_open_failures: List[str] = Field(
+        default_factory=list,
+        sa_column=Column(ARRAY(String)),  # Postgres ARRAY of TEXT
+        description="List of rule codes that failed during open validation (empty if passed)",
     )
 
 

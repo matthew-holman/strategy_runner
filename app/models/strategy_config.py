@@ -23,13 +23,11 @@ class FilterRule(BaseModel):
         if comparison == "between":
             if min_val is None or max_val is None:
                 raise ValueError("`between` comparison requires both `min` and `max`.")
+            if comparison_field:
+                raise ValueError("`comparison_field` is not supported with 'between'.")
         else:
             if value is None:
                 raise ValueError(f"`{comparison}` comparison requires `value`.")
-            if comparison_field and comparison == "between":
-                raise ValueError(
-                    "`comparison_field` is not supported with 'between' comparison."
-                )
         return values
 
 
@@ -62,9 +60,17 @@ class RankingFormula(BaseModel):
 class StrategyConfig(BaseModel):
     strategy_id: str
     name: str
-    filters: list[FilterRule]
+    signal_filters: list[FilterRule]
+
+    # NEW: validation-at-open rules (same schema as filters)
+    validate_at_open_filters: list[FilterRule] = Field(default_factory=list)
+
     ranking: list[RankingFormula]
     max_signals_per_day: int = Field(default=5)
+
+    def _all_filters(self) -> list[FilterRule]:
+        # Keep the traversal logic in one place
+        return [*self.signal_filters, *self.validate_at_open_filters]
 
     def required_columns(self) -> set[str]:
         cols = {
@@ -73,10 +79,11 @@ class StrategyConfig(BaseModel):
             "avg_vol_20d",
             "atr_14",
         }  # needed for default filters
-        for rule in self.filters:
+        for rule in self._all_filters():
             cols.add(rule.indicator)
             if rule.comparison_field:
                 cols.add(rule.comparison_field)
+        # Ranking requirements
         for r in self.ranking:
             cols.add(r.indicator)
             if r.denominator:

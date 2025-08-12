@@ -25,7 +25,7 @@ def apply_strategy_filters(
 ) -> pd.DataFrame:
     mask = pd.Series(True, index=df.index)
 
-    for rule in strategy_config.filters:
+    for rule in strategy_config.signal_filters:
         rule_mask = _build_filter_mask(df, rule)
         mask &= rule_mask
 
