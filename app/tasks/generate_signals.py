@@ -94,7 +94,6 @@ def _map_ranked_df_to_eod_signals(
       - measurement_date: date (your signal_date)
       - ohlcv_daily_id: int
       - score: float in [0, 1]
-      - notes: optional[str]
 
     Returns a list[EODSignal] ready for persistence.
     """
@@ -116,7 +115,6 @@ def _map_ranked_df_to_eod_signals(
                 security_id=int(row.security_id),
                 ohlcv_daily_id=int(row.ohlcv_daily_id),
                 score=float(row.score),
-                notes=getattr(row, "notes", None),  # still fine for optional
             )
         )
     return out
