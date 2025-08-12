@@ -56,5 +56,7 @@ class EODSignal(EODSignalBase, table=True):  # type: ignore[call-arg]
         {"extend_existing": True},
     )
 
-    ohlcv_daily: Optional[OHLCVDaily] = Relationship()
-    technical_indicator: Optional[TechnicalIndicator] = Relationship()
+    ohlcv_daily: Optional[OHLCVDaily] = Relationship(back_populates="eod_signals")
+    technical_indicator: Optional[TechnicalIndicator] = Relationship(
+        back_populates="eod_signals"
+    )

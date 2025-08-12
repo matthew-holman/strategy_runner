@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel as PydanticBase, Field as PydanticField
-from sqlmodel import Field
+from sqlmodel import Field, Relationship
 
 from app.models.base_model import BaseModel
 
@@ -74,6 +74,12 @@ class TechnicalIndicatorBase(BaseModel, table=False):  # type: ignore[call-arg]
 class TechnicalIndicator(TechnicalIndicatorBase, table=True):  # type: ignore[call-arg]
 
     __tablename__ = "technical_indicator"
+
+    # avoid lazy loading see
+    # https://docs.sqlalchemy.org/en/14/orm/loading_relationships.html#relationship-loading-techniques
+    eod_signals: list["EODSignal"] = Relationship(  # type: ignore[name-defined]  # noqa: F821
+        back_populates="technical_indicator", sa_relationship_kwargs={"lazy": "raise"}
+    )
 
 
 class StockIndexConstituentRead(TechnicalIndicatorBase):  # type: ignore[call-arg]

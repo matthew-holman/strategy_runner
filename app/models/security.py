@@ -24,10 +24,10 @@ class SecurityBase(BaseModel, table=False):  # type: ignore[call-arg]
         description="The Central Index Key (CIK) used by the SEC to uniquely identify corporations and individuals",
     )
 
-    first_trade_date: Optional[
-        date
-    ]  # Based on yahoo ticker.info() firstTradeDateMilliseconds
-    exchange: Optional[str]  # Based on yahoo ticker.info()`fullExchangeName`
+    first_trade_date: Optional[date] = (
+        None  # Based on yahoo ticker.info() firstTradeDateMilliseconds
+    )
+    exchange: Optional[str] = None  # Based on yahoo ticker.info()`fullExchangeName`
 
 
 class Security(SecurityBase, table=True):  # type: ignore[call-arg]
