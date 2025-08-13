@@ -81,7 +81,7 @@ async def docs_redirect():
 
 
 if __name__ == "__main__":
-    Log.setup(application_name="trading-bot-api")
+    Log.setup(log_name="rest-api", application_name="trading-bot-api")
     settings = get_settings()
 
     uvicorn.run(

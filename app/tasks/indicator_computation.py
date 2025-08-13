@@ -19,9 +19,11 @@ from app.utils.trading_calendar import (
     get_all_trading_days_between,
 )
 
+log = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
+
 
 def compute_daily_indicators_for_all_securities(
-    compute_date: date = date.today(),
+    compute_date: date = yesterday(),
 ) -> None:
     """
     Task: Compute and persist technical indicators for each security for a given date.
@@ -29,7 +31,6 @@ def compute_daily_indicators_for_all_securities(
     Args:
         compute_date: The date to compute indicators for (default: today).
     """
-    log = Log.setup("trading-bot", "daily-indicator-computation")
     log.info(f"Running indicator update for {compute_date}")
 
     with next(get_db()) as db_session:
@@ -87,8 +88,6 @@ def compute_daily_indicators_for_all_securities(
 
 
 def heal_missing_technical_indicators() -> None:
-
-    log = Log.setup("trading-bot", "healing-indicator-computation")
 
     with next(get_db()) as db_session:
         ic_handler = StockIndexConstituentHandler(db_session)

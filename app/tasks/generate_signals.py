@@ -14,7 +14,7 @@ from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.models.eod_signal import EODSignal
 from app.models.stock_index_constituent import SP500
 from app.models.strategy_config import StrategyConfig
-from app.signals.filters import apply_default_filters, apply_strategy_filters
+from app.signals.filters import apply_default_filters, apply_signal_filters
 from app.signals.ranking import apply_strategy_ranking
 from app.utils import Log
 from app.utils.datetime_utils import yesterday
@@ -49,7 +49,7 @@ def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
             f"{len(df) - len(default_filtered)} tickers removed by default filtering."
         )
 
-        strategy_filtered = apply_strategy_filters(default_filtered, strategy_config)
+        strategy_filtered = apply_signal_filters(default_filtered, strategy_config)
         Log.info(
             f"{len(strategy_filtered)} tickers remaining after applying {strategy_config.name} filters."
         )

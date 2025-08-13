@@ -14,15 +14,15 @@ from app.utils.datetime_utils import yesterday_was_a_weekend
 from app.utils.log import Log
 
 # Setup logger with a clear application name
-logger = Log.setup(log_name="daily-tasks")
+logger = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
 
 
 def main():
-    Log.info("Starting daily update tasks...")
+    logger.info("Starting daily update tasks...")
     try:
 
         if yesterday_was_a_weekend():
-            Log.info("Yesterday was a weekend, no data to pull.")
+            logger.info("Yesterday was a weekend, no data to pull.")
         else:
 
             Log.info("Running daily_sp500_sync to check S&P500 constituents...")
@@ -57,10 +57,10 @@ def main():
             generate_daily_signals("sma_pullback_buy.json")
 
     except Exception as e:
-        Log.critical(f"Daily tasks failed with exception: {e}")
+        logger.critical(f"Daily tasks failed with exception: {e}")
         sys.exit(1)
 
-    Log.info("All daily tasks completed successfully.")
+    logger.info("All daily tasks completed successfully.")
     sys.exit(0)
 
 

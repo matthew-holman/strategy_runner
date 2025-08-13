@@ -1,3 +1,5 @@
+from typing import List
+
 import pandas as pd
 
 from app.models.strategy_config import FilterRule, StrategyConfig
@@ -20,16 +22,26 @@ def apply_default_filters(df: pd.DataFrame, required_columns: set[str]) -> pd.Da
     return df
 
 
-def apply_strategy_filters(
+def apply_signal_filters(
     df: pd.DataFrame, strategy_config: StrategyConfig
 ) -> pd.DataFrame:
+    return apply_filters(df, strategy_config.signal_filters)
+
+
+def apply_validate_at_open_filters(
+    df: pd.DataFrame, strategy_config: StrategyConfig
+) -> pd.DataFrame:
+    return apply_filters(df, strategy_config.validate_at_open_filters)
+
+
+def apply_filters(df: pd.DataFrame, filters: List[FilterRule]) -> pd.DataFrame:
+    """Return only rows that pass all rules."""
+    if not filters:
+        return df
     mask = pd.Series(True, index=df.index)
-
-    for rule in strategy_config.signal_filters:
-        rule_mask = _build_filter_mask(df, rule)
-        mask &= rule_mask
-
-    return df[mask]
+    for rule in filters:
+        mask &= _build_filter_mask(df, rule)
+    return df[mask].copy()
 
 
 def _build_filter_mask(df: pd.DataFrame, rule: FilterRule) -> pd.Series:

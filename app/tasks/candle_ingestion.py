@@ -22,6 +22,8 @@ from app.utils.trading_calendar import (
     get_nth_previous_trading_day,
 )
 
+logger = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
+
 
 def daily_candle_fetch():
 
@@ -43,7 +45,7 @@ def daily_candle_fetch():
                 or yesterday()
             )
             if from_date >= today:
-                Log.info(
+                logger.info(
                     f"No new data to fetch for {index_constituent.security.symbol} — up to date."
                 )
                 continue
@@ -58,7 +60,7 @@ def daily_candle_fetch():
                 )
                 ohlcv_handler.save_all(daily_candles)
                 db_session.commit()
-                Log.info(
+                logger.info(
                     f"Inserted {len(daily_candles)} daily OHLCV records for security "
                     f"{index_constituent.security.company_name} from {from_date} to today"
                 )
@@ -81,7 +83,7 @@ def heal_missing_candle_data() -> None:
             try:
 
                 if security.exchange is None or security.first_trade_date is None:
-                    Log.warning(f"skipping {security.symbol} missing metadata.")
+                    logger.warning(f"skipping {security.symbol} missing metadata.")
                     continue
 
                 oldest_required_candle_date = get_nth_previous_trading_day(
@@ -106,10 +108,10 @@ def heal_missing_candle_data() -> None:
                 )
 
                 if not missing_dates:
-                    Log.info(f"No gaps found for {security.symbol}")
+                    logger.info(f"No gaps found for {security.symbol}")
                     continue
 
-                Log.info(
+                logger.info(
                     f"Found {len(missing_dates)} missing candles for {security.symbol}"
                     f" between {min(missing_dates)} and {max(missing_dates)}"
                 )
@@ -123,7 +125,7 @@ def heal_missing_candle_data() -> None:
                 )
 
             except Exception as e:
-                Log.error(f"Failed healing {security.symbol}: {e}")
+                logger.error(f"Failed healing {security.symbol}: {e}")
 
 
 def _find_missing_trading_days(
@@ -188,7 +190,7 @@ def _fetch_and_store_ohlcv_for_security(
     ohlcv_handler = OHLCVDailyHandler(db_session)
 
     for chunk_start, chunk_end in _chunk_date_range(start_date, end_date, chunk_size):
-        Log.debug(f"Fetching {security.symbol} from {chunk_start} to {chunk_end}")
+        logger.debug(f"Fetching {security.symbol} from {chunk_start} to {chunk_end}")
         time.sleep(2)
 
         records = MarketDataService.fetch_ohlcv_history(
@@ -196,7 +198,7 @@ def _fetch_and_store_ohlcv_for_security(
         )
 
         if not records:
-            Log.warning(
+            logger.warning(
                 f"No data for {security.symbol} from {chunk_start} to {chunk_end}"
             )
             continue
@@ -205,6 +207,6 @@ def _fetch_and_store_ohlcv_for_security(
         ohlcv_handler.save_all(candles)
         db_session.commit()
 
-        Log.info(
+        logger.info(
             f"Inserted {len(candles)} records for {security.symbol} from {chunk_start} to {chunk_end}"
         )

@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 from datetime import date
 from decimal import Decimal
-from typing import List
 
 from sqlalchemy import BigInteger, Column, UniqueConstraint
-from sqlmodel import Field, Relationship
+from sqlmodel import Field
 
 from app.models.base_model import BaseModel
 
@@ -31,12 +32,6 @@ class OHLCVDaily(OHLCVDailyBase, table=True):  # type: ignore[call-arg]
     __tablename__ = "ohlcv_daily"
 
     id: int = Field(default=None, primary_key=True)
-
-    # avoid lazy loading see
-    # https://docs.sqlalchemy.org/en/14/orm/loading_relationships.html#relationship-loading-techniques
-    eod_signals: List["EODSignal"] = Relationship(  # type: ignore[name-defined]  # noqa: F821
-        back_populates="ohlcv_daily", sa_relationship_kwargs={"lazy": "raise"}
-    )
 
     __table_args__ = (
         UniqueConstraint(

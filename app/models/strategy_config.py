@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -60,15 +60,15 @@ class RankingFormula(BaseModel):
 class StrategyConfig(BaseModel):
     strategy_id: str
     name: str
-    signal_filters: list[FilterRule]
+    signal_filters: List[FilterRule]
 
     # NEW: validation-at-open rules (same schema as filters)
     validate_at_open_filters: list[FilterRule] = Field(default_factory=list)
 
-    ranking: list[RankingFormula]
+    ranking: List[RankingFormula]
     max_signals_per_day: int = Field(default=5)
 
-    def _all_filters(self) -> list[FilterRule]:
+    def _all_filters(self) -> List[FilterRule]:
         # Keep the traversal logic in one place
         return [*self.signal_filters, *self.validate_at_open_filters]
 

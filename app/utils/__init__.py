@@ -1,2 +1,2 @@
 # __init__.py
-from .log import LOG_NAME, Log
+from .log import APPLICATION_NAME, Log

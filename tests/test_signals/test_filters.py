@@ -1,7 +1,7 @@
 import pandas as pd
 
 from app.models.strategy_config import FilterRule, StrategyConfig
-from app.signals.filters import apply_default_filters, apply_strategy_filters
+from app.signals.filters import apply_default_filters, apply_signal_filters
 
 # ---------------------------
 # Default Filters
@@ -88,7 +88,7 @@ def test_apply_strategy_filters_basic_value_comparison():
         max_signals_per_day=5,
     )
 
-    filtered = apply_strategy_filters(df, config)
+    filtered = apply_signal_filters(df, config)
     assert len(filtered) == 1
     assert filtered.iloc[0]["ticker"] == "AAPL"
 
@@ -118,7 +118,7 @@ def test_apply_strategy_filters_between():
         max_signals_per_day=5,
     )
 
-    filtered = apply_strategy_filters(df, config)
+    filtered = apply_signal_filters(df, config)
     assert len(filtered) == 1
     assert filtered.iloc[0]["ticker"] == "AAPL"
 
@@ -147,6 +147,6 @@ def test_apply_strategy_filters_multiplier_of():
         max_signals_per_day=5,
     )
 
-    filtered = apply_strategy_filters(df, config)
+    filtered = apply_signal_filters(df, config)
     assert len(filtered) == 1
     assert filtered.iloc[0]["ticker"] == "AAPL"

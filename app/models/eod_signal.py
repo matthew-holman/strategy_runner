@@ -1,14 +1,13 @@
+from __future__ import annotations
+
 from datetime import date
 from decimal import Decimal
-from typing import List, Optional
 
 from sqlalchemy import CheckConstraint, ForeignKeyConstraint, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY
-from sqlmodel import Column, Field, Relationship
+from sqlmodel import Column, Field
 
 from app.models.base_model import BaseModel
-from app.models.ohlcv_daily import OHLCVDaily
-from app.models.technical_indicator import TechnicalIndicator
 
 
 class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
@@ -29,16 +28,16 @@ class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
         le=1.0,
         description="raw score from strategy logic before ranking weights",
     )
-    validated_at_open: Optional[bool] = Field(
+    validated_at_open: bool | None = Field(
         default=None,
         description="True/False after open validation; None if not yet validated",
         index=True,
     )
-    next_open_price: Optional[Decimal] = Field(  # use Decimal to avoid float drift
+    next_open_price: Decimal | None = Field(  # use Decimal to avoid float drift
         default=None,
         description="Open price used during validation from the NEXT trading session",
     )
-    validated_at_open_failures: List[str] = Field(
+    validated_at_open_failures: list[str] = Field(
         default_factory=list,
         sa_column=Column(ARRAY(String)),  # Postgres ARRAY of TEXT
         description="List of rule codes that failed during open validation (empty if passed)",
@@ -67,9 +66,4 @@ class EODSignal(EODSignalBase, table=True):  # type: ignore[call-arg]
             ondelete="RESTRICT",
         ),
         {"extend_existing": True},
-    )
-
-    ohlcv_daily: Optional[OHLCVDaily] = Relationship(back_populates="eod_signals")
-    technical_indicator: Optional[TechnicalIndicator] = Relationship(
-        back_populates="eod_signals"
     )
