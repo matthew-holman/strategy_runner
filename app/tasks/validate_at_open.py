@@ -1,27 +1,69 @@
 from datetime import date
+from typing import Dict
 
 import pandas as pd
 
-from signals.filters import apply_validate_at_open_filters
+from handlers.technical_indicator import TechnicalIndicatorHandler
 
 from app.core.db import get_db
-from app.handlers.eod_signal_handler import EODSignalHandler
+from app.handlers.eod_signal import EODSignalHandler
+from app.handlers.security import SecurityHandler
+from app.services.market_data_service import MarketDataService
+from app.utils import Log
 from app.utils.trading_calendar import get_nth_previous_trading_day
+
+log = Log.setup(log_name="sod-tasks", application_name="daily-tasks")
 
 
 def validate_signals_from_previous_trading_day():
 
     today = date.today()
-    last_trading_day = get_nth_previous_trading_day(
+    previous_trading_day = get_nth_previous_trading_day(
         exchange="NYSE", as_of=today, lookback_days=1
     )
 
     with next(get_db()) as db_session:
         signals_to_validate = EODSignalHandler(db_session).get_unvalidated_for_date(
-            last_trading_day
+            previous_trading_day
         )
 
+        if not signals_to_validate:
+            log.error("No signals found to validate.")
+
+        security_ids = [s.security_id for s in signals_to_validate]
+        securities = SecurityHandler(db_session).get_by_ids(
+            security_ids
+        )  # implement if you don’t have it
+        sec_by_id: Dict[int, str] = {s.id: s.ticker for s in securities}
+
+        rows = TechnicalIndicatorHandler(
+            db_session
+        ).get_combined_data_by_date_and_security_ids(previous_trading_day, security_ids)
+
         df = pd.DataFrame([signal.model_dump() for signal in signals_to_validate])
-        strategy = df #'load_stragey_by_name()'
-        validated_signals = strategy #'apply_validate_at_open_filters(strategy)'
-        validated_signals = validated_signals
+        df = _attach_next_open(df, on_date=today)
+        df = _attach_early_volume(df, on_date=today)
+
+        # group by strategy id
+        # for strategy_id in group
+        # strategy_config = STRATEGY_PROVIDER.get_by_id(strategy_id)
+        # required_cols = strategy_config.required_eod_columns()
+        # df = apply_default_open_validation_filters(df, required_cols)
+
+
+def _attach_next_open(df: pd.DataFrame, on_date: date) -> pd.DataFrame:
+    tickers = df["ticker"].dropna().unique().tolist()
+    opens = MarketDataService().fetch_daily_open_for_ticker(tickers, on_date=on_date)
+    out = df.copy()
+    out["next_open"] = out["ticker"].map(opens)
+    return out
+
+
+def _attach_early_volume(df: pd.DataFrame, on_date: date) -> pd.DataFrame:
+    tickers = df["ticker"].dropna().unique().tolist()
+    early_vol_by_ticker = MarketDataService.fetch_early_volumes_5m(
+        tickers, on_date=on_date
+    )
+    out = df.copy()
+    out["early_volume"] = out["ticker"].map(early_vol_by_ticker)
+    return out

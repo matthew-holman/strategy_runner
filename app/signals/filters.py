@@ -4,20 +4,59 @@ import pandas as pd
 
 from app.models.strategy_config import FilterRule, StrategyConfig
 
+# This assumes USD
+# TODO replace with a currency specific version later
+PRICE_FLOOR = 5
 
-def apply_default_filters(df: pd.DataFrame, required_columns: set[str]) -> pd.DataFrame:
+MIN_EARLY_VOL_PERCENT = 0.01
+MAX_GAP_ABS = 0.05
+OPEN_STALENESS_SECONDS = 60
+
+
+def apply_default_signal_filters(
+    df: pd.DataFrame, required_columns: set[str]
+) -> pd.DataFrame:
     # 1. Drop rows with NaNs in required columns
     for col in required_columns:
         df = df[df[col].notna()]
 
     # 2. Apply price filter
-    df = df[df["close"] >= 5]
+    df = df[df["close"] >= PRICE_FLOOR]
 
     # 3. Apply volume filter
     df = df[df["volume"] >= 1_000_000]
 
     # 4. Apply ATR% filter: atr / entry_price >= 0.015
     df = df[(df["atr_14"] / df["close"]) >= 0.015]
+
+    return df
+
+
+def apply_default_open_validation_filters(
+    df: pd.DataFrame, required_columns: set[str]
+) -> pd.DataFrame:
+    # 1) No Missing Core Fields
+    for col in required_columns:
+        df = df[df[col].notna()]
+
+    # 2) Price floor on today's open
+    df = df[df["next_open"] >= PRICE_FLOOR]
+
+    # 3) Liquidity sanity check
+    df = df[df["early_volume"] >= (MIN_EARLY_VOL_PERCENT * df["avg_vol_20d"])]
+
+    # 4) Gap limit: |open/close - 1| <= MAX_GAP_ABS
+    gap = (df["next_open"] / df["close"]) - 1.0
+    df = df[gap.abs() <= MAX_GAP_ABS]
+
+    # 5) Staleness / halt guard
+    # sched = pd.to_datetime(df["scheduled_open_ts"], utc=True, errors="coerce")
+    # seen = pd.to_datetime(df["open_seen_at"], utc=True, errors="coerce")
+    # delta = (seen - sched).dt.total_seconds()
+    # fresh_mask = (
+    #     seen.notna() & sched.notna() & (delta >= 0) & (delta <= OPEN_STALENESS_SECONDS)
+    # )
+    # df = df[fresh_mask]
 
     return df
 

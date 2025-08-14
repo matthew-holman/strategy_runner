@@ -111,3 +111,7 @@ class CombinedSignalRow(PydanticBase):
 
     # Optional: computed fields
     strategy_score: Optional[float] = None
+
+    # Optional: validate at open
+    next_open: Optional[float] = None
+    early_volume: Optional[float] = None

@@ -1,7 +1,7 @@
 import pandas as pd
 
 from app.models.strategy_config import FilterRule, StrategyConfig
-from app.signals.filters import apply_default_filters, apply_signal_filters
+from app.signals.filters import apply_default_signal_filters, apply_signal_filters
 
 # ---------------------------
 # Default Filters
@@ -54,7 +54,7 @@ def test_apply_default_filters_removes_nan_and_bad_values():
         ]
     )
 
-    filtered = apply_default_filters(df)
+    filtered = apply_default_signal_filters(df)
     assert len(filtered) == 1
     assert filtered.iloc[0]["entry_price"] == 100
 

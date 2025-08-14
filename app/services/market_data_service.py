@@ -1,6 +1,7 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Dict, List, Optional, TypedDict
 
+import pandas as pd
 import yfinance as yf
 
 from app.utils import Log
@@ -81,3 +82,82 @@ class MarketDataService:
                 "first_trade_date": None,
                 "exchange": None,
             }
+
+    @staticmethod
+    def fetch_daily_open_for_ticker(
+        security_symbol: str, on_date: date
+    ) -> Optional[float]:
+        """
+        Return the 'open' used for validation on `on_date`, or None if no bar is available
+        (holiday, bad ticker, provider lag).
+        Reuses fetch_ohlcv_history to keep normalization in one place.
+        """
+        # yfinance daily bars: safer to use [on_date, on_date+1) so the row is included
+        rows = MarketDataService.fetch_ohlcv_history(
+            ticker=security_symbol,
+            start_date=on_date,
+            end_date=on_date + timedelta(days=1),
+            interval="1d",
+        )
+        if not rows:
+            return None
+
+        # There *should* be one row with 'date' == on_date (ISO string or datetime depending on your normalization)
+        # Your fetch_ohlcv_history resets index to a 'date' column (Python date if source tz plays nice),
+        # but be defensive:
+        for r in rows:
+            r_date = r.get("date")
+            if isinstance(r_date, date):
+                if r_date == on_date:
+                    return float(r["open"])
+            else:
+                # r_date may be a datetime or ISO string -> normalize and compare
+                try:
+                    d = date.fromisoformat(str(r_date)[:10])
+                    if d == on_date:
+                        return float(r["open"])
+                except Exception as e:
+                    Log.warning(f"Failed to fetch open for {security_symbol}: {e}")
+                    continue
+
+        return None
+
+    @staticmethod
+    def fetch_early_volume_5m(security_symbol: str, on_date: date) -> int | None:
+        df = yf.Ticker(security_symbol).history(
+            start=on_date.isoformat(),
+            end=(on_date + timedelta(days=1)).isoformat(),
+            interval="5m",
+            auto_adjust=False,
+        )
+        if df.empty:
+            return None
+
+        # Convert to ET and take the first regular-session bar (09:30–09:35)
+        df = df.tz_convert("America/New_York")
+        mask = (df.index.time >= time(9, 30)) & (df.index.time < time(9, 35))
+        first_bar = df.loc[mask]
+        if first_bar.empty:
+            return None
+
+        vol = first_bar["Volume"].iloc[0]
+        return int(vol) if pd.notna(vol) else None
+
+    @staticmethod
+    def fetch_early_volumes_5m(
+        security_symbols: List[str], on_date: date
+    ) -> Dict[str, int | None]:
+        """
+        Fetch early volumes for multiple tickers at the 09:30–09:35 ET bar.
+        Returns a dict {ticker: early_volume or None}.
+        """
+        out: Dict[str, int | None] = {}
+        for security_symbol in security_symbols:
+            try:
+                out[security_symbol] = MarketDataService.fetch_early_volume_5m(
+                    security_symbol, on_date
+                )
+            except Exception as e:
+                Log.warning(f"Failed to fetch 5m open for {security_symbol}: {e}")
+                out[security_symbol] = None
+        return out

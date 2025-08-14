@@ -68,18 +68,32 @@ class StrategyConfig(BaseModel):
     ranking: List[RankingFormula]
     max_signals_per_day: int = Field(default=5)
 
-    def _all_filters(self) -> List[FilterRule]:
-        # Keep the traversal logic in one place
-        return [*self.signal_filters, *self.validate_at_open_filters]
-
-    def required_columns(self) -> set[str]:
+    def required_eod_columns(self) -> set[str]:
         cols = {
             "close",
             "volume",
             "avg_vol_20d",
             "atr_14",
         }  # needed for default filters
-        for rule in self._all_filters():
+        for rule in self.signal_filters:
+            cols.add(rule.indicator)
+            if rule.comparison_field:
+                cols.add(rule.comparison_field)
+        # Ranking requirements
+        for r in self.ranking:
+            cols.add(r.indicator)
+            if r.denominator:
+                cols.add(r.denominator)
+        return cols
+
+    def required_sod_columns(self) -> set[str]:
+        cols = {
+            "close",
+            "volume",
+            "avg_vol_20d",
+            "atr_14",
+        }  # needed for default filters
+        for rule in self.validate_at_open_filters:
             cols.add(rule.indicator)
             if rule.comparison_field:
                 cols.add(rule.comparison_field)

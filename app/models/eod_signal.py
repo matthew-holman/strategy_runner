@@ -16,6 +16,7 @@ class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
         index=True, description="Trading day this signal is based on"
     )
     strategy_name: str = Field(description="Strategy that generated the signal")
+    strategy_id: str = Field(description="Matches filename, used for loading configs")
 
     # joins
     security_id: int = Field(index=True, foreign_key="security.id")

@@ -1,5 +1,3 @@
-import json
-
 from datetime import date
 from pathlib import Path
 from typing import List, Set
@@ -7,20 +5,23 @@ from typing import List, Set
 import pandas as pd
 
 from app.core.db import get_db
-from app.handlers.eod_signal_handler import EODSignalHandler
+from app.handlers.eod_signal import EODSignalHandler
 from app.handlers.security import SecurityHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.models.eod_signal import EODSignal
 from app.models.stock_index_constituent import SP500
 from app.models.strategy_config import StrategyConfig
-from app.signals.filters import apply_default_filters, apply_signal_filters
+from app.signals.filters import apply_default_signal_filters, apply_signal_filters
 from app.signals.ranking import apply_strategy_ranking
+from app.strategies import STRATEGY_PROVIDER
 from app.utils import Log
 from app.utils.datetime_utils import yesterday
 
-BASE_CONFIG_DIR = Path(__file__).parent / ".." / ".." / "strategy_configs"
+BASE_CONFIG_DIR = Path(__file__).parent / ".." / ".." / "strategies"
 REQUIRED_COLS: Set[str] = {"security_id", "measurement_date", "ohlcv_daily_id", "score"}
+
+log = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
 
 
 def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
@@ -43,47 +44,39 @@ def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
 
         df = pd.DataFrame([ti.model_dump() for ti in indicator_data])
 
-        required_cols = strategy_config.required_columns()
-        default_filtered = apply_default_filters(df, required_cols)
-        Log.info(
+        required_cols = strategy_config.required_eod_columns()
+        default_filtered = apply_default_signal_filters(df, required_cols)
+        log.info(
             f"{len(df) - len(default_filtered)} tickers removed by default filtering."
         )
 
         strategy_filtered = apply_signal_filters(default_filtered, strategy_config)
-        Log.info(
+        log.info(
             f"{len(strategy_filtered)} tickers remaining after applying {strategy_config.name} filters."
         )
 
         ranked_signals = apply_strategy_ranking(strategy_filtered, strategy_config)
 
-        Log.info(
-            f"Found {len(ranked_signals)} using strategy {strategy_config.name}, persisting to db."
+        log.info(
+            f"Found {len(ranked_signals)} signal using strategy {strategy_config.name}, persisting to db."
         )
         EODSignalHandler(db_session).save_all(
-            _map_ranked_df_to_eod_signals(ranked_signals, strategy_config.name)
+            _map_ranked_df_to_eod_signals(ranked_signals, strategy_config)
         )
         db_session.commit()
 
 
-def generate_daily_signals(strategy_json_path: str):
-    # Load and parse the JSON file
-    full_path = (BASE_CONFIG_DIR / strategy_json_path).resolve()
+def generate_daily_signals():
 
-    with open(full_path) as f:
-        raw_config = json.load(f)
-
-    # Validate and parse into a StrategyConfig
-    strategy_config = StrategyConfig.model_validate(raw_config)
-
-    # Run the signal picker for yesterdays trading
-    return run_signal_picker(
-        generation_date=yesterday(), strategy_config=strategy_config
-    )
+    for cfg in STRATEGY_PROVIDER.iter_configs():
+        log.info(f"Generating signals using strategy {cfg.name}")
+        # Run the signal picker for yesterday's trading
+        run_signal_picker(generation_date=yesterday(), strategy_config=cfg)
 
 
 def _map_ranked_df_to_eod_signals(
     ranked_df: pd.DataFrame,
-    strategy_name: str,
+    strategy: StrategyConfig,
 ) -> List[EODSignal]:
     """
     Convert ranked signal dataframe into EODSignal models (no persistence).
@@ -110,7 +103,8 @@ def _map_ranked_df_to_eod_signals(
         out.append(
             EODSignal(
                 signal_date=row.measurement_date,
-                strategy_name=strategy_name,
+                strategy_name=strategy.name,
+                strategy_id=strategy.strategy_id,
                 security_id=int(row.security_id),
                 ohlcv_daily_id=int(row.ohlcv_daily_id),
                 score=float(row.score),

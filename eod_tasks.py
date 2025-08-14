@@ -13,12 +13,11 @@ from app.tasks.update_securities import check_for_missing_metadata
 from app.utils.datetime_utils import yesterday_was_a_weekend
 from app.utils.log import Log
 
-# Setup logger with a clear application name
 logger = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
 
 
 def main():
-    logger.info("Starting daily update tasks...")
+    logger.info("Starting end of day tasks...")
     try:
 
         if yesterday_was_a_weekend():
@@ -54,13 +53,13 @@ def main():
             else:
                 Log.info("No changes to S&P500, skipping ")
 
-            generate_daily_signals("sma_pullback_buy.json")
+            generate_daily_signals()
 
     except Exception as e:
-        logger.critical(f"Daily tasks failed with exception: {e}")
+        logger.critical(f"End of day tasks failed with exception: {e}")
         sys.exit(1)
 
-    logger.info("All daily tasks completed successfully.")
+    logger.info("All end of day tasks completed successfully.")
     sys.exit(0)
 
 
