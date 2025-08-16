@@ -53,7 +53,8 @@ make main
 make check
 ```
 
-### add pre commit hook for formatting
-```bash
-pre-commit install
-```
+### Prerequisites
+
+- Python 3.12+
+- [Poetry](https://python-poetry.org/docs/#installation) version 2.1 or higher
+- Docker (for running the database)
