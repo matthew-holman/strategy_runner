@@ -117,4 +117,4 @@ def client(
 @pytest.fixture(autouse=True)
 def setup_loging():
     """Pytest fixture that sets up logging for tests"""
-    Log.setup(application_name="tests")
+    Log.setup(application_name="tests", log_name="tests")

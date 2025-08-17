@@ -4,13 +4,13 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Dict, List
 
-from indicators.compute import TRADING_DAYS_REQUIRED
 from sqlmodel import Session
 
 from app.core.db import get_db
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.handlers.security import SecurityHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
+from app.indicators.compute import TRADING_DAYS_REQUIRED
 from app.models.ohlcv_daily import OHLCVDailyCreate
 from app.models.security import Security
 from app.models.stock_index_constituent import SP500
