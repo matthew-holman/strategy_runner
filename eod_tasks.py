@@ -24,34 +24,36 @@ def main():
             logger.info("Yesterday was a weekend, no data to pull.")
         else:
 
-            Log.info("Running daily_sp500_sync to check S&P500 constituents...")
+            logger.info("Running daily_sp500_sync to check S&P500 constituents...")
             has_sp500_changed = daily_sp500_sync()
 
             if has_sp500_changed:
-                Log.info("Running security metadata update.")
+                logger.info("Running security metadata update.")
                 check_for_missing_metadata()
             else:
-                Log.info("No changes to S&P500, skipping metadata fetch")
+                logger.info("No changes to S&P500, skipping metadata fetch")
 
-            Log.info("Running daily_candle_fetch to pull daily ohlcv data...")
+            logger.info("Running daily_candle_fetch to pull daily ohlcv data...")
             daily_candle_fetch()
 
             if has_sp500_changed:
-                Log.info("Running historical backfill to fill gaps in the ohlcv data.")
+                logger.info(
+                    "Running historical backfill to fill gaps in the ohlcv data."
+                )
                 heal_missing_candle_data()
             else:
-                Log.info("No changes to S&P500, historic ohlcv fetch")
+                logger.info("No changes to S&P500, historic ohlcv fetch")
 
-            Log.info("Running indicator computation on pulled daily ohlcv data...")
+            logger.info("Running indicator computation on pulled daily ohlcv data...")
             compute_daily_indicators_for_all_securities()
 
             if has_sp500_changed:
-                Log.info(
+                logger.info(
                     "Running historical backfill to fill gaps in the computed indicators."
                 )
                 heal_missing_technical_indicators()
             else:
-                Log.info("No changes to S&P500, skipping ")
+                logger.info("No changes to S&P500, skipping ")
 
             generate_daily_signals()
 
