@@ -33,6 +33,10 @@ class SecurityHandler:
             return security
         return None
 
+    def get_by_ids(self, security_ids: List[int]) -> List[Security]:
+        stmt = select(Security).where(Security.id.in_(security_ids))  # type: ignore[attr-defined]
+        return self.db_session.exec(stmt).all()
+
     def get_with_missing_metadata(self) -> List[Security]:
         stmt = select(Security).where(
             or_(
