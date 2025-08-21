@@ -30,7 +30,7 @@ class EODSignalHandler:
 
     def get_unvalidated_for_date(self, signal_date: date) -> list[EODSignal]:
         stmt = select(EODSignal).where(
-            EODSignal.signal_date == signal_date, EODSignal.validated_at_open is None
+            EODSignal.signal_date == signal_date, EODSignal.validated_at_open.is_(None)  # type: ignore[union-attr]
         )
 
         return self.db_session.exec(stmt).all()

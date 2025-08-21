@@ -16,3 +16,7 @@ def main():
         logger.critical(f"Daily tasks failed with exception: {e}")
 
     logger.info("All daily tasks completed successfully.")
+
+
+if __name__ == "__main__":
+    main()

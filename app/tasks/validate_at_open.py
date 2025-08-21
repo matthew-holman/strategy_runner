@@ -99,8 +99,17 @@ def apply_at_open_filters(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _attach_next_open(df: pd.DataFrame, on_date: date) -> pd.DataFrame:
-    tickers = df["symbol"].dropna().unique().tolist()
-    opens = MarketDataService().fetch_daily_open_for_ticker(tickers, on_date=on_date)
+    symbols = df["symbol"].dropna().unique().tolist()
+    mds = MarketDataService()
+
+    opens: dict[str, float | None] = {}
+    for symbol in symbols:
+        try:
+            opens[symbol] = mds.fetch_daily_open_for_ticker(symbol, on_date=on_date)
+        except Exception as e:
+            log.error(f"Failed to fetch open for {symbol} on {on_date}: {e}")
+            opens[symbol] = None
+
     out = df.copy()
     out["next_open"] = out["symbol"].map(opens)
     return out
