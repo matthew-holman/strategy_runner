@@ -16,7 +16,7 @@ from app.services.stock_index_service import (
     get_snapshot_html_from_wayback,
     get_snapshot_timestamps,
 )
-from app.utils import Log
+from app.utils.log_wrapper import Log
 
 
 def daily_sp500_sync() -> bool:
@@ -114,7 +114,7 @@ def _map_ic_objects(
         security = security_handler.get_or_create(record)
 
         if security is None:
-            Log.warning(f"Security {record["symbol"]} could not be created")
+            Log.warning(f"Security {record['symbol']} could not be created")
             continue
 
         ic_objects.append(

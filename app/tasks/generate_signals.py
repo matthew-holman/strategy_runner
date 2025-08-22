@@ -15,13 +15,11 @@ from app.models.strategy_config import StrategyConfig
 from app.signals.filters import apply_default_signal_filters, apply_signal_filters
 from app.signals.ranking import apply_strategy_ranking
 from app.strategies import STRATEGY_PROVIDER
-from app.utils import Log
 from app.utils.datetime_utils import yesterday
+from app.utils.log_wrapper import Log
 
 BASE_CONFIG_DIR = Path(__file__).parent / ".." / ".." / "strategies"
 REQUIRED_COLS: Set[str] = {"security_id", "measurement_date", "ohlcv_daily_id", "score"}
-
-log = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
 
 
 def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
@@ -46,18 +44,18 @@ def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
 
         required_cols = strategy_config.required_eod_columns()
         default_filtered = apply_default_signal_filters(df, required_cols)
-        log.info(
+        Log.info(
             f"{len(df) - len(default_filtered)} tickers removed by default filtering."
         )
 
         strategy_filtered = apply_signal_filters(default_filtered, strategy_config)
-        log.info(
+        Log.info(
             f"{len(strategy_filtered)} tickers remaining after applying {strategy_config.name} filters."
         )
 
         ranked_signals = apply_strategy_ranking(strategy_filtered, strategy_config)
 
-        log.info(
+        Log.info(
             f"Found {len(ranked_signals)} signal using strategy {strategy_config.name}, persisting to db."
         )
         EODSignalHandler(db_session).save_all(
@@ -69,7 +67,7 @@ def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
 def generate_daily_signals():
 
     for cfg in STRATEGY_PROVIDER.iter_configs():
-        log.info(f"Generating signals using strategy {cfg.name}")
+        Log.info(f"Generating signals using strategy {cfg.name}")
         # Run the signal picker for yesterday's trading
         run_signal_picker(generation_date=yesterday(), strategy_config=cfg)
 

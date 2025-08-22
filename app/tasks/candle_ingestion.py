@@ -2,7 +2,7 @@ import time
 
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Dict, List
+from typing import List
 
 from sqlmodel import Session
 
@@ -14,15 +14,13 @@ from app.indicators.compute import TRADING_DAYS_REQUIRED
 from app.models.ohlcv_daily import OHLCVDailyCreate
 from app.models.security import Security
 from app.models.stock_index_constituent import SP500
-from app.services.market_data_service import MarketDataService
-from app.utils import Log
+from app.services.market_data_service import OHLCV, MarketDataService
 from app.utils.datetime_utils import yesterday
+from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import (
     get_all_trading_days_between,
     get_nth_previous_trading_day,
 )
-
-logger = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
 
 
 def daily_candle_fetch():
@@ -45,7 +43,7 @@ def daily_candle_fetch():
                 or yesterday()
             )
             if from_date >= today:
-                logger.info(
+                Log.info(
                     f"No new data to fetch for {index_constituent.security.symbol} — up to date."
                 )
                 continue
@@ -60,7 +58,7 @@ def daily_candle_fetch():
                 )
                 ohlcv_handler.save_all(daily_candles)
                 db_session.commit()
-                logger.info(
+                Log.info(
                     f"Inserted {len(daily_candles)} daily OHLCV records for security "
                     f"{index_constituent.security.company_name} from {from_date} to today"
                 )
@@ -83,7 +81,7 @@ def heal_missing_candle_data() -> None:
             try:
 
                 if security.exchange is None or security.first_trade_date is None:
-                    logger.warning(f"skipping {security.symbol} missing metadata.")
+                    Log.warning(f"skipping {security.symbol} missing metadata.")
                     continue
 
                 oldest_required_candle_date = get_nth_previous_trading_day(
@@ -108,10 +106,10 @@ def heal_missing_candle_data() -> None:
                 )
 
                 if not missing_dates:
-                    logger.info(f"No gaps found for {security.symbol}")
+                    Log.info(f"No gaps found for {security.symbol}")
                     continue
 
-                logger.info(
+                Log.info(
                     f"Found {len(missing_dates)} missing candles for {security.symbol}"
                     f" between {min(missing_dates)} and {max(missing_dates)}"
                 )
@@ -125,7 +123,7 @@ def heal_missing_candle_data() -> None:
                 )
 
             except Exception as e:
-                logger.error(f"Failed healing {security.symbol}: {e}")
+                Log.error(f"Failed healing {security.symbol}: {e}")
 
 
 def _find_missing_trading_days(
@@ -147,7 +145,9 @@ def _find_missing_trading_days(
     return missing_days
 
 
-def _map_ohlcv_objects(records: List[Dict], security_id: int) -> List[OHLCVDailyCreate]:
+def _map_ohlcv_objects(
+    records: List[OHLCV], security_id: int
+) -> List[OHLCVDailyCreate]:
     ohlcv_objects = []
     for record in records:
         ohlcv_objects.append(
@@ -190,7 +190,7 @@ def _fetch_and_store_ohlcv_for_security(
     ohlcv_handler = OHLCVDailyHandler(db_session)
 
     for chunk_start, chunk_end in _chunk_date_range(start_date, end_date, chunk_size):
-        logger.debug(f"Fetching {security.symbol} from {chunk_start} to {chunk_end}")
+        Log.debug(f"Fetching {security.symbol} from {chunk_start} to {chunk_end}")
         time.sleep(2)
 
         records = MarketDataService.fetch_ohlcv_history(
@@ -198,7 +198,7 @@ def _fetch_and_store_ohlcv_for_security(
         )
 
         if not records:
-            logger.warning(
+            Log.warning(
                 f"No data for {security.symbol} from {chunk_start} to {chunk_end}"
             )
             continue
@@ -207,6 +207,6 @@ def _fetch_and_store_ohlcv_for_security(
         ohlcv_handler.save_all(candles)
         db_session.commit()
 
-        logger.info(
+        Log.info(
             f"Inserted {len(candles)} records for {security.symbol} from {chunk_start} to {chunk_end}"
         )

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 import sys
 
 from app.tasks.candle_ingestion import daily_candle_fetch, heal_missing_candle_data
@@ -11,59 +12,58 @@ from app.tasks.indicator_computation import (
 from app.tasks.sp500_ingestion import daily_sp500_sync
 from app.tasks.update_securities import check_for_missing_metadata
 from app.utils.datetime_utils import yesterday_was_a_weekend
-from app.utils.log import Log
+from app.utils.log_setup import configure_logging
+from app.utils.log_wrapper import Log
 
-logger = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
 
+def main() -> int:
 
-def main():
-    logger.info("Starting end of day tasks...")
+    configure_logging(logger_name="eod-tasks", level=logging.INFO, use_utc=False)
+
+    Log.info("Starting end of day tasks...")
     try:
-
         if yesterday_was_a_weekend():
-            logger.info("Yesterday was a weekend, no data to pull.")
+            Log.info("Yesterday was a weekend; no data to pull.")
+            return 0
+
+        Log.info("Checking S&P 500 constituents (daily_sp500_sync)...")
+        has_sp500_changed = daily_sp500_sync()
+
+        if has_sp500_changed:
+            Log.info("Updating security metadata.")
+            check_for_missing_metadata()
         else:
+            Log.info("No S&P 500 changes; skipping metadata fetch.")
 
-            logger.info("Running daily_sp500_sync to check S&P500 constituents...")
-            has_sp500_changed = daily_sp500_sync()
+        Log.info("Fetching daily OHLCV data...")
+        daily_candle_fetch()
 
-            if has_sp500_changed:
-                logger.info("Running security metadata update.")
-                check_for_missing_metadata()
-            else:
-                logger.info("No changes to S&P500, skipping metadata fetch")
+        if has_sp500_changed:
+            Log.info("Healing OHLCV gaps (historical backfill).")
+            heal_missing_candle_data()
+        else:
+            Log.info("No S&P 500 changes; skipping OHLCV backfill.")
 
-            logger.info("Running daily_candle_fetch to pull daily ohlcv data...")
-            daily_candle_fetch()
+        Log.info("Computing indicators on pulled daily OHLCV data...")
+        compute_daily_indicators_for_all_securities()
 
-            if has_sp500_changed:
-                logger.info(
-                    "Running historical backfill to fill gaps in the ohlcv data."
-                )
-                heal_missing_candle_data()
-            else:
-                logger.info("No changes to S&P500, historic ohlcv fetch")
+        if has_sp500_changed:
+            Log.info("Healing indicator gaps (historical backfill).")
+            heal_missing_technical_indicators()
+        else:
+            Log.info("No S&P 500 changes; skipping indicator backfill.")
 
-            logger.info("Running indicator computation on pulled daily ohlcv data...")
-            compute_daily_indicators_for_all_securities()
+        Log.info("Generating daily signals...")
+        generate_daily_signals()
 
-            if has_sp500_changed:
-                logger.info(
-                    "Running historical backfill to fill gaps in the computed indicators."
-                )
-                heal_missing_technical_indicators()
-            else:
-                logger.info("No changes to S&P500, skipping ")
+    except Exception:
+        # Captures full traceback
+        Log.exception("End of day tasks failed.")
+        return 1
 
-            generate_daily_signals()
-
-    except Exception as e:
-        logger.critical(f"End of day tasks failed with exception: {e}")
-        sys.exit(1)
-
-    logger.info("All end of day tasks completed successfully.")
-    sys.exit(0)
+    Log.info("All end of day tasks completed successfully.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

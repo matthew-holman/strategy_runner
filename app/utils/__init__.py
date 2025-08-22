@@ -1,2 +1,2 @@
 # __init__.py
-from .log import APPLICATION_NAME, Log
+from .log_wrapper import Log, get_logger

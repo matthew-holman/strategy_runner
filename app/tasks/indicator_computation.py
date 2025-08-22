@@ -14,12 +14,10 @@ from app.indicators.exceptions import InsufficientOHLCVDataError
 from app.models.stock_index_constituent import SP500
 from app.models.technical_indicator import TechnicalIndicator
 from app.utils.datetime_utils import yesterday
-from app.utils.log import Log
+from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import (
     get_all_trading_days_between,
 )
-
-log = Log.setup(log_name="eod-tasks", application_name="daily-tasks")
 
 
 def compute_daily_indicators_for_all_securities(
@@ -31,7 +29,7 @@ def compute_daily_indicators_for_all_securities(
     Args:
         compute_date: The date to compute indicators for (default: today).
     """
-    log.info(f"Running indicator update for {compute_date}")
+    Log.info(f"Running indicator update for {compute_date}")
 
     with next(get_db()) as db_session:
         technical_indicator_handler = TechnicalIndicatorHandler(db_session)
@@ -40,7 +38,7 @@ def compute_daily_indicators_for_all_securities(
         latest_sp500_snapshot = stock_ic_handler.get_most_recent_snapshot(SP500)
 
         if latest_sp500_snapshot.id is None:
-            log.warning("No snapshot found for S&P 500.")
+            Log.warning("No snapshot found for S&P 500.")
             return
 
         index_constituents = stock_ic_handler.get_by_snapshot_id(
@@ -51,7 +49,7 @@ def compute_daily_indicators_for_all_securities(
             security = index_constituent.security
 
             if security is None:
-                log.warning(
+                Log.warning(
                     f"Constituent {index_constituent.id} has no linked security"
                 )
                 continue
@@ -82,7 +80,7 @@ def compute_daily_indicators_for_all_securities(
                 db_session.commit()
 
             except Exception as e:
-                log.error(
+                Log.error(
                     f"Failed to compute indicators for {security.symbol} with id {security.id}: {e}"
                 )
 
@@ -128,10 +126,10 @@ def heal_missing_technical_indicators() -> None:
                 missing_dates = sorted(list(trading_days - existing_dates))
 
                 if not missing_dates:
-                    log.info(f"No indicator gaps for {security.symbol}")
+                    Log.info(f"No indicator gaps for {security.symbol}")
                     continue
 
-                log.info(
+                Log.info(
                     f"Found {len(missing_dates)} indicator gaps for {security.symbol} "
                     f"between {min(missing_dates)} and {max(missing_dates)}."
                 )
@@ -144,7 +142,7 @@ def heal_missing_technical_indicators() -> None:
                         session=db_session,
                     )
                 except InsufficientOHLCVDataError as e:
-                    log.warning(
+                    Log.warning(
                         f"Insufficient OHLCV data for indicators: security_id={e.security_id}, "
                         f"from={e.start_date}, to={e.end_date}"
                     )
@@ -165,11 +163,11 @@ def heal_missing_technical_indicators() -> None:
 
             except InvalidOperation as e:
                 # tb = traceback.format_exc()
-                log.error(
+                Log.error(
                     f"Caught decimal error while processing {security.symbol}: {e}"
                 )
             except Exception as e:
-                log.error(f"Failed healing indicators for {security.symbol}: {e}")
+                Log.error(f"Failed healing indicators for {security.symbol}: {e}")
 
 
 def _map_indicators_df_to_model(computed_values: dict) -> TechnicalIndicator:

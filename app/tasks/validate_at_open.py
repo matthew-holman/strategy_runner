@@ -3,6 +3,8 @@ from typing import Dict
 
 import pandas as pd
 
+from handlers.technical_indicator import TechnicalIndicatorHandler
+
 from app.core.db import get_db
 from app.handlers.eod_signal import EODSignalHandler
 from app.handlers.security import SecurityHandler
@@ -12,10 +14,8 @@ from app.signals.filters import (
     apply_validate_at_open_filters,
 )
 from app.strategies import STRATEGY_PROVIDER
-from app.utils import Log
+from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_nth_previous_trading_day
-
-log = Log.setup(log_name="sod-tasks", application_name="daily-tasks")
 
 
 def validate_signals_from_previous_trading_day() -> pd.DataFrame:
@@ -25,22 +25,32 @@ def validate_signals_from_previous_trading_day() -> pd.DataFrame:
     )
 
     # --- load signals + tickers
-    with next(get_db()) as db:
-        signals = EODSignalHandler(db).get_unvalidated_for_date(previous_trading_day)
+    with next(get_db()) as db_session:
+        signals = EODSignalHandler(db_session).get_unvalidated_for_date(
+            previous_trading_day
+        )
         if not signals:
-            log.info("No signals found to validate.")
+            Log.info("No signals found to validate.")
             return pd.DataFrame()
 
         sec_ids = [s.security_id for s in signals]
-        securities = SecurityHandler(db).get_by_ids(sec_ids)
+        securities = SecurityHandler(db_session).get_by_ids(sec_ids)
         sec_id_to_symbol: Dict[int, str] = {s.id: s.symbol for s in securities}
 
-    df = pd.DataFrame([s.model_dump() for s in signals])
-    df["symbol"] = df["security_id"].map(sec_id_to_symbol)
+        combined_rows = TechnicalIndicatorHandler(
+            db_session
+        ).get_combined_data_by_date_and_security_ids(previous_trading_day, sec_ids)
+
+    sig_df = pd.DataFrame(
+        [s.model_dump() for s in signals]
+    )  # must include: id, security_id, strategy_id
+    sig_df["symbol"] = sig_df["security_id"].map(sec_id_to_symbol)
+
+    comb_df = pd.DataFrame([r.model_dump() for r in combined_rows])
+    df = sig_df.merge(comb_df, on="security_id", how="left")
 
     # --- attach market data
-    df = _attach_next_open(df, on_date=today)
-    df = _attach_early_volume(df, on_date=today)
+    df = _attach_early_ohlcvs_5m(df, on_date=today)
 
     # --- validate (pure)
     validated = apply_at_open_filters(df)
@@ -83,7 +93,7 @@ def apply_at_open_filters(df: pd.DataFrame) -> pd.DataFrame:
 
         # 2) Strategy-specific open filters
         working = base.copy()
-        working["open"] = working["next_open"]  # alias
+        # working["open"] = working["next_open"]  # alias
         passed = apply_validate_at_open_filters(working, cfg)
 
         if "id" in passed.columns:
@@ -98,30 +108,12 @@ def apply_at_open_filters(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def _attach_next_open(df: pd.DataFrame, on_date: date) -> pd.DataFrame:
+def _attach_early_ohlcvs_5m(df: pd.DataFrame, on_date: date) -> pd.DataFrame:
     symbols = df["symbol"].dropna().unique().tolist()
-    mds = MarketDataService()
-
-    opens: dict[str, float | None] = {}
-    for symbol in symbols:
-        try:
-            opens[symbol] = mds.fetch_daily_open_for_ticker(symbol, on_date=on_date)
-        except Exception as e:
-            log.error(f"Failed to fetch open for {symbol} on {on_date}: {e}")
-            opens[symbol] = None
-
+    bars = MarketDataService.fetch_early_ohlcvs_5m(symbols, on_date=on_date)
     out = df.copy()
-    out["next_open"] = out["symbol"].map(opens)
-    return out
-
-
-def _attach_early_volume(df: pd.DataFrame, on_date: date) -> pd.DataFrame:
-    tickers = df["symbol"].dropna().unique().tolist()
-    early_vol_by_ticker = MarketDataService.fetch_early_volumes_5m(
-        tickers, on_date=on_date
-    )
-    out = df.copy()
-    out["early_volume"] = out["symbol"].map(early_vol_by_ticker)
+    out["next_open"] = out["symbol"].map(lambda s: (bars.get(s) or {}).get("open"))
+    out["early_volume"] = out["symbol"].map(lambda s: (bars.get(s) or {}).get("volume"))
     return out
 
 
