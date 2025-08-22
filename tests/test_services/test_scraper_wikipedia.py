@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from services.stock_index_service import WIKI_URL, _fetch_html, extract_constituents
+from app.services.stock_index_service import WIKI_URL, _fetch_html, extract_constituents
 
 
 def test_parse_constituents_html_snapshot():

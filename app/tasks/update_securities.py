@@ -3,7 +3,7 @@ import urllib.error
 from app.core.db import get_db
 from app.handlers.security import SecurityHandler
 from app.services.market_data_service import MarketDataService
-from app.utils import Log
+from app.utils.log_wrapper import Log
 
 
 def check_for_missing_metadata():

@@ -1,3 +1,5 @@
+import logging
+
 import uvicorn
 
 from fastapi import FastAPI
@@ -8,6 +10,7 @@ from starlette.exceptions import HTTPException
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse
+from utils.log_setup import configure_logging
 
 from app.core.settings import get_settings
 from app.utils import Log
@@ -81,7 +84,7 @@ async def docs_redirect():
 
 
 if __name__ == "__main__":
-    Log.setup(application_name="trading-bot-api")
+    configure_logging(logger_name="rest-api", level=logging.INFO, use_utc=False)
     settings = get_settings()
 
     uvicorn.run(

@@ -1,4 +1,5 @@
 import importlib
+import logging
 import pkgutil
 
 from typing import Generator
@@ -8,12 +9,12 @@ import pytest
 from sqlalchemy_utils import create_database, database_exists, drop_database
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.testclient import TestClient
+from utils.log_setup import configure_logging
 
 import app.models
 
 from app.core.db import get_db
 from app.core.settings import get_settings
-from app.utils import Log
 from main import get_app
 
 settings = get_settings()
@@ -114,7 +115,15 @@ def client(
         yield test_client
 
 
-@pytest.fixture(autouse=True)
-def setup_loging():
-    """Pytest fixture that sets up logging for tests"""
-    Log.setup(application_name="tests")
+@pytest.fixture(autouse=True, scope="session")
+def configure_test_logging() -> None:
+    """
+    Configure logging for the test session.
+    Keep pytest's own handlers so caplog/log_cli work.
+    """
+    configure_logging(
+        logger_name="tests",
+        level=logging.DEBUG,
+        use_utc=False,
+        force=False,
+    )

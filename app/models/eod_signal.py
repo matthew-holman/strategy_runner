@@ -1,12 +1,13 @@
-from datetime import date
-from typing import Optional
+from __future__ import annotations
 
-from sqlalchemy import CheckConstraint, ForeignKeyConstraint, UniqueConstraint
-from sqlmodel import Field, Relationship
+from datetime import date
+from decimal import Decimal
+
+from sqlalchemy import CheckConstraint, ForeignKeyConstraint, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlmodel import Column, Field
 
 from app.models.base_model import BaseModel
-from app.models.ohlcv_daily import OHLCVDaily
-from app.models.technical_indicator import TechnicalIndicator
 
 
 class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
@@ -15,6 +16,7 @@ class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
         index=True, description="Trading day this signal is based on"
     )
     strategy_name: str = Field(description="Strategy that generated the signal")
+    strategy_id: str = Field(description="Matches filename, used for loading configs")
 
     # joins
     security_id: int = Field(index=True, foreign_key="security.id")
@@ -27,8 +29,19 @@ class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
         le=1.0,
         description="raw score from strategy logic before ranking weights",
     )
-    notes: Optional[str] = Field(
-        default=None, description="Short explanation of why it passed"
+    validated_at_open: bool | None = Field(
+        default=None,
+        description="True/False after open validation; None if not yet validated",
+        index=True,
+    )
+    next_open_price: Decimal | None = Field(  # use Decimal to avoid float drift
+        default=None,
+        description="Open price used during validation from the NEXT trading session",
+    )
+    validated_at_open_failures: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(ARRAY(String)),  # Postgres ARRAY of TEXT
+        description="List of rule codes that failed during open validation (empty if passed)",
     )
 
 
@@ -54,9 +67,4 @@ class EODSignal(EODSignalBase, table=True):  # type: ignore[call-arg]
             ondelete="RESTRICT",
         ),
         {"extend_existing": True},
-    )
-
-    ohlcv_daily: Optional[OHLCVDaily] = Relationship(back_populates="eod_signals")
-    technical_indicator: Optional[TechnicalIndicator] = Relationship(
-        back_populates="eod_signals"
     )

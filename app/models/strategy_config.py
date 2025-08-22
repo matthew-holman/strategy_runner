@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -23,13 +23,11 @@ class FilterRule(BaseModel):
         if comparison == "between":
             if min_val is None or max_val is None:
                 raise ValueError("`between` comparison requires both `min` and `max`.")
+            if comparison_field:
+                raise ValueError("`comparison_field` is not supported with 'between'.")
         else:
             if value is None:
                 raise ValueError(f"`{comparison}` comparison requires `value`.")
-            if comparison_field and comparison == "between":
-                raise ValueError(
-                    "`comparison_field` is not supported with 'between' comparison."
-                )
         return values
 
 
@@ -62,21 +60,44 @@ class RankingFormula(BaseModel):
 class StrategyConfig(BaseModel):
     strategy_id: str
     name: str
-    filters: list[FilterRule]
-    ranking: list[RankingFormula]
+    signal_filters: List[FilterRule]
+
+    # NEW: validation-at-open rules (same schema as filters)
+    validate_at_open_filters: list[FilterRule] = Field(default_factory=list)
+
+    ranking: List[RankingFormula]
     max_signals_per_day: int = Field(default=5)
 
-    def required_columns(self) -> set[str]:
+    def required_eod_columns(self) -> set[str]:
         cols = {
             "close",
             "volume",
             "avg_vol_20d",
             "atr_14",
         }  # needed for default filters
-        for rule in self.filters:
+        for rule in self.signal_filters:
             cols.add(rule.indicator)
             if rule.comparison_field:
                 cols.add(rule.comparison_field)
+        # Ranking requirements
+        for r in self.ranking:
+            cols.add(r.indicator)
+            if r.denominator:
+                cols.add(r.denominator)
+        return cols
+
+    def required_sod_columns(self) -> set[str]:
+        cols = {
+            "close",
+            "volume",
+            "avg_vol_20d",
+            "atr_14",
+        }  # needed for default filters
+        for rule in self.validate_at_open_filters:
+            cols.add(rule.indicator)
+            if rule.comparison_field:
+                cols.add(rule.comparison_field)
+        # Ranking requirements
         for r in self.ranking:
             cols.add(r.indicator)
             if r.denominator:

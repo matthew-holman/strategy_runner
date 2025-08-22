@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.db import upsert  # your existing helper
 from app.models.eod_signal import EODSignal
@@ -26,3 +27,10 @@ class EODSignalHandler:
             exclude_columns={"id", "created_at", "updated_at"},
         )
         self.db_session.flush()
+
+    def get_unvalidated_for_date(self, signal_date: date) -> list[EODSignal]:
+        stmt = select(EODSignal).where(
+            EODSignal.signal_date == signal_date, EODSignal.validated_at_open.is_(None)  # type: ignore[union-attr]
+        )
+
+        return self.db_session.exec(stmt).all()

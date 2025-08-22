@@ -1,6 +1,6 @@
 import pytest
 
-from tasks.candle_ingestion import daily_candle_fetch
+from app.tasks.candle_ingestion import daily_candle_fetch
 
 
 @pytest.mark.skip(reason="Debug entry point only")

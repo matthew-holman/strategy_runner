@@ -1,7 +1,7 @@
 {
   "strategy_id": "sma_pullback_buy",
   "name": "20SMA Pullback with Volume + RSI Filter",
-  "filters": [
+  "signal_filters": [
     {
       "indicator": "sma_50",
       "comparison": "<",
@@ -30,6 +30,29 @@
       "value": 1.5,
       "comparison_field": "avg_vol_20d",
       "note": "Volume spike confirmation"
+    }
+  ],
+  "validate_at_open_filters": [
+    {
+      "indicator": "open",
+      "comparison": "<",
+      "value": 1.02,
+      "comparison_field": "close",
+      "note": "Avoid chasing — open should not gap up more than 2% from previous close"
+    },
+    {
+      "indicator": "open",
+      "comparison": ">",
+      "value": 0.98,
+      "comparison_field": "close",
+      "note": "Avoid weakness — open should not gap down more than 2% from previous close"
+    },
+    {
+      "indicator": "atr_14",
+      "comparison": ">",
+      "value": 0.01,
+      "comparison_field": "open",
+      "note": "Ensure enough volatility — ATR at least 1% of open price"
     }
   ],
   "ranking": [

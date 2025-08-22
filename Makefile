@@ -1,6 +1,6 @@
 requirements:
-	poetry install --no-root --with dev
-	# pre-commit install --install-hooks
+	poetry install --sync --all-extras
+	pre-commit install --install-hooks
 	export BETTER_EXCEPTIONS=1
 
 isort:

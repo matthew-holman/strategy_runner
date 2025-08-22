@@ -16,7 +16,7 @@ def test_apply_strategy_ranking_gaussian():
     config = StrategyConfig(
         strategy_id="test",
         name="RSI Gaussian",
-        filters=[],
+        signal_filters=[],
         ranking=[
             RankingFormula(
                 indicator="rsi_14",
@@ -45,7 +45,7 @@ def test_apply_strategy_ranking_log_ratio():
     config = StrategyConfig(
         strategy_id="test",
         name="Volume Spike",
-        filters=[],
+        signal_filters=[],
         ranking=[
             RankingFormula(
                 indicator="volume",
@@ -74,7 +74,7 @@ def test_apply_strategy_ranking_linear():
     config = StrategyConfig(
         strategy_id="test",
         name="Close Pos Linear",
-        filters=[],
+        signal_filters=[],
         ranking=[
             RankingFormula(
                 indicator="close_position",
@@ -101,7 +101,7 @@ def test_apply_strategy_ranking_limits_top_n():
     config = StrategyConfig(
         strategy_id="test",
         name="Limit to 2",
-        filters=[],
+        signal_filters=[],
         ranking=[
             RankingFormula(
                 indicator="close_position",

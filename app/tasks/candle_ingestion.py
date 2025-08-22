@@ -2,21 +2,21 @@ import time
 
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Dict, List
+from typing import List
 
-from indicators.compute import TRADING_DAYS_REQUIRED
 from sqlmodel import Session
 
 from app.core.db import get_db
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.handlers.security import SecurityHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
+from app.indicators.compute import TRADING_DAYS_REQUIRED
 from app.models.ohlcv_daily import OHLCVDailyCreate
 from app.models.security import Security
 from app.models.stock_index_constituent import SP500
-from app.services.market_data_service import MarketDataService
-from app.utils import Log
+from app.services.market_data_service import OHLCV, MarketDataService
 from app.utils.datetime_utils import yesterday
+from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import (
     get_all_trading_days_between,
     get_nth_previous_trading_day,
@@ -145,7 +145,9 @@ def _find_missing_trading_days(
     return missing_days
 
 
-def _map_ohlcv_objects(records: List[Dict], security_id: int) -> List[OHLCVDailyCreate]:
+def _map_ohlcv_objects(
+    records: List[OHLCV], security_id: int
+) -> List[OHLCVDailyCreate]:
     ohlcv_objects = []
     for record in records:
         ohlcv_objects.append(
