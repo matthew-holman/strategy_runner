@@ -80,6 +80,11 @@ def _normalize_ticker_symbol(symbol: str) -> str:
 
 
 def _fetch_html(url: str) -> str:
-    response = requests.get(url, verify=certifi.where())
+    headers = {
+        "User-Agent": (
+            "MyTradingBot/1.0 (https://lagomlands.short.gy/ or lagomlands@gmail.com) "
+        )
+    }
+    response = requests.get(url, headers=headers, verify=certifi.where())
     response.raise_for_status()
     return response.text
