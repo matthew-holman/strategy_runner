@@ -1,9 +1,9 @@
 from datetime import date
 from typing import Dict, List
 
+from utils.calendars import CfeCalendar, NyseCalendar
+
 from app.utils.calendars.calendar_strategies import (
-    CfeCalendar,
-    NyseCalendar,
     TradingCalendar,
 )
 
@@ -23,16 +23,15 @@ _CALENDAR_REGISTRY: Dict[str, TradingCalendar] = {
 }
 
 
-def get_nth_previous_trading_day(
-    exchange: str, as_of: date, lookback_days: int
-) -> date:
+def get_nth_trading_day(exchange: str, as_of: date, offset: int) -> date:
     """
     Return the calendar date of the Nth previous trading day from a given date.
 
     Args:
         exchange: Market identifier, e.g., "NYSE", "NASDAQ_STO"
         as_of: Anchor date (inclusive); typically today.
-        lookback_days: Number of trading days to look back.
+        offset: < 0: Nth previous trading day (strictly before `as_of`)
+        offset: > 0: Nth next trading day (strictly after `as_of`)
 
     Returns:
         The calendar date that is `lookback_days` trading days before `as_of`.
@@ -41,10 +40,10 @@ def get_nth_previous_trading_day(
     if not calendar:
         raise UnsupportedExchangeError(f"Exchange '{exchange}' is not supported yet")
 
-    lookback_adjusted = (
-        lookback_days + 1
+    offset = (
+        offset + 1 if offset > 1 else offset - 1
     )  # we need to pad by a day to get correct result
-    return calendar.get_nth_previous_trading_day(as_of, lookback_adjusted)
+    return calendar.get_nth_trading_day(as_of, offset)
 
 
 def get_all_trading_days_between(exchange: str, start: date, end: date) -> List[date]:
