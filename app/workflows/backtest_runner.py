@@ -1,11 +1,10 @@
 import logging
 
-from core.db import get_db
-from handlers.backtest_run import BacktestRunHandler
-from models.backtest_run import BacktestRun
-from strategies import STRATEGY_PROVIDER
-from tasks.backtest_trades import generate_trades_for_signals
-
+from app.core.db import get_db
+from app.handlers.backtest_run import BacktestRunHandler
+from app.models.backtest_run import BacktestRun
+from app.stratagies.signal_strategies import STRATEGY_PROVIDER
+from app.tasks.backtest_trades import generate_trades_for_signals
 from app.utils import Log
 from app.utils.log_setup import configure_logging
 

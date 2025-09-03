@@ -57,7 +57,7 @@ class RankingFormula(BaseModel):
         return values
 
 
-class StrategyConfig(BaseModel):
+class SignalStrategyConfig(BaseModel):
     strategy_id: str
     name: str
     signal_filters: List[FilterRule]

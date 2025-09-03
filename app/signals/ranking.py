@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
 
-from app.models.strategy_config import StrategyConfig
+from app.models.strategy_config import SignalStrategyConfig
 
 
 def apply_strategy_ranking(
-    df: pd.DataFrame, strategy_config: StrategyConfig
+    df: pd.DataFrame, strategy_config: SignalStrategyConfig
 ) -> pd.DataFrame:
     df = df.copy()
     df["score"] = 0.0

@@ -1,16 +1,16 @@
 import pandas as pd
 import pytest
 
-from app.models.strategy_config import FilterRule, RankingFormula, StrategyConfig
+from app.models.strategy_config import FilterRule, RankingFormula, SignalStrategyConfig
 from app.tasks.validate_at_open import (
     apply_at_open_filters,  # adjust import if file differs
 )
 
 
 @pytest.fixture
-def mock_config_sma_pullback() -> StrategyConfig:
+def mock_config_sma_pullback() -> SignalStrategyConfig:
 
-    return StrategyConfig(
+    return SignalStrategyConfig(
         strategy_id="sma_pullback_buy",
         name="SMA PB",
         signal_filters=[],

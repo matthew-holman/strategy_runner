@@ -2,7 +2,7 @@ from typing import List
 
 import pandas as pd
 
-from app.models.strategy_config import FilterRule, StrategyConfig
+from app.models.strategy_config import FilterRule, SignalStrategyConfig
 
 # This assumes USD
 # TODO replace with a currency specific version later
@@ -62,13 +62,13 @@ def apply_default_open_validation_filters(
 
 
 def apply_signal_filters(
-    df: pd.DataFrame, strategy_config: StrategyConfig
+    df: pd.DataFrame, strategy_config: SignalStrategyConfig
 ) -> pd.DataFrame:
     return apply_filters(df, strategy_config.signal_filters)
 
 
 def apply_validate_at_open_filters(
-    df: pd.DataFrame, strategy_config: StrategyConfig
+    df: pd.DataFrame, strategy_config: SignalStrategyConfig
 ) -> pd.DataFrame:
     return apply_filters(df, strategy_config.validate_at_open_filters)
 

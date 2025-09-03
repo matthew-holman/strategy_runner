@@ -1,6 +1,6 @@
 import pandas as pd
 
-from app.models.strategy_config import FilterRule, RankingFormula, StrategyConfig
+from app.models.strategy_config import FilterRule, RankingFormula, SignalStrategyConfig
 from app.signals.filters import (
     apply_default_open_validation_filters,
     apply_default_signal_filters,
@@ -82,7 +82,7 @@ def test_apply_strategy_filters_basic_value_comparison():
         ]
     )
 
-    config = StrategyConfig(
+    config = SignalStrategyConfig(
         strategy_id="test",
         name="SMA rule",
         signal_filters=[
@@ -112,7 +112,7 @@ def test_apply_strategy_filters_between():
         ]
     )
 
-    config = StrategyConfig(
+    config = SignalStrategyConfig(
         strategy_id="test",
         name="RSI range filter",
         signal_filters=[
@@ -143,7 +143,7 @@ def test_apply_strategy_filters_multiplier_of():
         ]
     )
 
-    config = StrategyConfig(
+    config = SignalStrategyConfig(
         strategy_id="test",
         name="Volume spike",
         signal_filters=[
@@ -233,7 +233,7 @@ def test_apply_validate_at_open_filters_with_next_open_alias():
         }
     )
 
-    cfg = StrategyConfig(
+    cfg = SignalStrategyConfig(
         strategy_id="sma_pullback_buy",
         name="SMA PB",
         signal_filters=[],

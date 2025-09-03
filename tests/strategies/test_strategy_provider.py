@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from app.strategies import StrategyProvider
+from stratagies.signal_strategies import SignalStrategyProvider
 
 
 def test_provider_loads_and_orders(tmp_path: Path):
     write_min_strategy_json(tmp_path, "sma_pullback_buy")
-    provider = StrategyProvider.from_directory(tmp_path)
+    provider = SignalStrategyProvider.from_directory(tmp_path)
     cfgs = list(provider.iter_configs())
     assert len(cfgs) == 1
     assert cfgs[0].strategy_id == "sma_pullback_buy"
@@ -20,7 +20,7 @@ def test_id_mismatch_raises(tmp_path: Path):
     write_min_strategy_json(tmp_path, "bar")  # creates bar.json
     (tmp_path / "foo.json").write_text((tmp_path / "bar.json").read_text())
     with pytest.raises(ValueError) as e:
-        StrategyProvider.from_directory(tmp_path)
+        SignalStrategyProvider.from_directory(tmp_path)
     assert "ID mismatch" in str(e.value)
 
 

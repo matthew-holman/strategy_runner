@@ -11,10 +11,10 @@ from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.models.eod_signal import EODSignal
 from app.models.stock_index_constituent import SP500
-from app.models.strategy_config import StrategyConfig
+from app.models.strategy_config import SignalStrategyConfig
 from app.signals.filters import apply_default_signal_filters, apply_signal_filters
 from app.signals.ranking import apply_strategy_ranking
-from app.strategies import STRATEGY_PROVIDER
+from app.stratagies.signal_strategies import STRATEGY_PROVIDER
 from app.utils.datetime_utils import yesterday
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_all_trading_days_between
@@ -23,7 +23,7 @@ BASE_CONFIG_DIR = Path(__file__).parent / ".." / ".." / "strategies"
 REQUIRED_COLS: Set[str] = {"security_id", "measurement_date", "ohlcv_daily_id", "score"}
 
 
-def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
+def run_signal_picker(generation_date: date, strategy_config: SignalStrategyConfig):
 
     with next(get_db()) as db_session:
         snapshot = StockIndexConstituentHandler(
@@ -79,7 +79,7 @@ def generate_daily_signals():
 
 def _map_ranked_df_to_eod_signals(
     ranked_df: pd.DataFrame,
-    strategy: StrategyConfig,
+    strategy: SignalStrategyConfig,
 ) -> List[EODSignal]:
     """
     Convert ranked signal dataframe into EODSignal models (no persistence).
@@ -122,7 +122,7 @@ def generate_historic_signals_for_all_configs() -> None:
         generate_historic_signals_for_config(strategy_config)
 
 
-def generate_historic_signals_for_config(strategy_config: StrategyConfig) -> None:
+def generate_historic_signals_for_config(strategy_config: SignalStrategyConfig) -> None:
 
     exchange = "NYSE"  # hardcoded for now, replace with exchange abstraction later.
 

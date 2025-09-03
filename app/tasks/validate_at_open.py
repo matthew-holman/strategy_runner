@@ -15,7 +15,7 @@ from app.signals.filters import (
     apply_default_open_validation_filters,
     apply_validate_at_open_filters,
 )
-from app.strategies import STRATEGY_PROVIDER
+from app.stratagies.signal_strategies import STRATEGY_PROVIDER
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_nth_trading_day
 

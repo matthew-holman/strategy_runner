@@ -5,11 +5,9 @@ from typing import List
 import pandas as pd
 
 from dateutil.utils import today
-from handlers.backtest_trade import BacktestTradeHandler
-from models.strategy_config import StrategyConfig
-from utils.datetime_utils import chunk_date_range
 
 from app.core.db import get_db
+from app.handlers.backtest_trade import BacktestTradeHandler
 from app.handlers.eod_signal import EODSignalHandler
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
@@ -17,6 +15,8 @@ from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.models.backtest_run import BacktestRun
 from app.models.backtest_trade import BacktestTrade, ExitReason
 from app.models.stock_index_constituent import SP500
+from app.models.strategy_config import SignalStrategyConfig
+from app.utils.datetime_utils import chunk_date_range
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_nth_trading_day
 
@@ -30,7 +30,7 @@ class ExitEvent:
 
 
 def generate_trades_for_signals(
-    backtest_run: BacktestRun, strategy_config: StrategyConfig
+    backtest_run: BacktestRun, strategy_config: SignalStrategyConfig
 ) -> None:
     config = backtest_run.backtest_config()
 
