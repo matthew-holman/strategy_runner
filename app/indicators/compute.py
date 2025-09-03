@@ -15,7 +15,7 @@ from app.indicators.rsi import rsi
 from app.indicators.sma import sma
 from app.utils.trading_calendar import (
     UnsupportedExchangeError,
-    get_nth_previous_trading_day,
+    get_nth_trading_day,
 )
 
 TRADING_DAYS_REQUIRED = 200
@@ -42,8 +42,8 @@ def compute_indicators_for_range(
     """
 
     try:
-        lookback_start = get_nth_previous_trading_day(
-            exchange=EXCHANGE, as_of=start_date, lookback_days=TRADING_DAYS_REQUIRED
+        lookback_start = get_nth_trading_day(
+            exchange=EXCHANGE, as_of=start_date, offset=-abs(TRADING_DAYS_REQUIRED)
         )
     except UnsupportedExchangeError as e:
         raise RuntimeError(

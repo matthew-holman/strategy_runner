@@ -17,14 +17,12 @@ from app.signals.filters import (
 )
 from app.strategies import STRATEGY_PROVIDER
 from app.utils.log_wrapper import Log
-from app.utils.trading_calendar import get_nth_previous_trading_day
+from app.utils.trading_calendar import get_nth_trading_day
 
 
 def validate_signals_from_previous_trading_day():
     today = date.today()
-    previous_trading_day = get_nth_previous_trading_day(
-        exchange="NYSE", as_of=today, lookback_days=1
-    )
+    previous_trading_day = get_nth_trading_day(exchange="NYSE", as_of=today, offset=-1)
 
     # --- load signals + tickers
     with next(get_db()) as db_session:

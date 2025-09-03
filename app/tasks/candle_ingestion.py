@@ -15,11 +15,11 @@ from app.models.ohlcv_daily import OHLCVDailyCreate
 from app.models.security import Security
 from app.models.stock_index_constituent import SP500
 from app.services.market_data_service import OHLCV, MarketDataService
-from app.utils.datetime_utils import yesterday
+from app.utils.datetime_utils import chunk_date_range, yesterday
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import (
     get_all_trading_days_between,
-    get_nth_previous_trading_day,
+    get_nth_trading_day,
 )
 
 
@@ -84,10 +84,10 @@ def heal_missing_candle_data() -> None:
                     Log.warning(f"skipping {security.symbol} missing metadata.")
                     continue
 
-                oldest_required_candle_date = get_nth_previous_trading_day(
+                oldest_required_candle_date = get_nth_trading_day(
                     exchange=security.exchange,
                     as_of=oldest_snapshot_date,
-                    lookback_days=TRADING_DAYS_REQUIRED,
+                    offset=-abs(TRADING_DAYS_REQUIRED),
                 )
 
                 period_start = (
@@ -189,7 +189,7 @@ def _fetch_and_store_ohlcv_for_security(
 ):
     ohlcv_handler = OHLCVDailyHandler(db_session)
 
-    for chunk_start, chunk_end in _chunk_date_range(start_date, end_date, chunk_size):
+    for chunk_start, chunk_end in chunk_date_range(start_date, end_date, chunk_size):
         Log.debug(f"Fetching {security.symbol} from {chunk_start} to {chunk_end}")
         time.sleep(2)
 

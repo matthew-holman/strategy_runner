@@ -34,3 +34,14 @@ class EODSignalHandler:
         )
 
         return self.db_session.exec(stmt).all()
+
+    def get_by_strategy_between_dates(
+        self, strategy_id: str, start_date: date, end_date: date
+    ) -> list[EODSignal]:
+        stmt = select(EODSignal).where(
+            EODSignal.strategy_id == strategy_id,
+            EODSignal.signal_date >= start_date,
+            EODSignal.signal_date <= end_date,
+        )
+
+        return self.db_session.exec(stmt).all()

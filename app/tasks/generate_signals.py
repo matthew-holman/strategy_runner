@@ -17,6 +17,7 @@ from app.signals.ranking import apply_strategy_ranking
 from app.strategies import STRATEGY_PROVIDER
 from app.utils.datetime_utils import yesterday
 from app.utils.log_wrapper import Log
+from app.utils.trading_calendar import get_all_trading_days_between
 
 BASE_CONFIG_DIR = Path(__file__).parent / ".." / ".." / "strategies"
 REQUIRED_COLS: Set[str] = {"security_id", "measurement_date", "ohlcv_daily_id", "score"}
@@ -42,6 +43,9 @@ def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
 
         df = pd.DataFrame([ti.model_dump() for ti in indicator_data])
 
+        if df.empty:
+            raise ValueError("Indicator Data dataframe was empty was empty")
+
         required_cols = strategy_config.required_eod_columns()
         default_filtered = apply_default_signal_filters(df, required_cols)
         Log.info(
@@ -58,10 +62,11 @@ def run_signal_picker(generation_date: date, strategy_config: StrategyConfig):
         Log.info(
             f"Found {len(ranked_signals)} signal using strategy {strategy_config.name}, persisting to db."
         )
-        EODSignalHandler(db_session).save_all(
-            _map_ranked_df_to_eod_signals(ranked_signals, strategy_config)
-        )
-        db_session.commit()
+        if not ranked_signals.empty:
+            EODSignalHandler(db_session).save_all(
+                _map_ranked_df_to_eod_signals(ranked_signals, strategy_config)
+            )
+            db_session.commit()
 
 
 def generate_daily_signals():
@@ -109,3 +114,34 @@ def _map_ranked_df_to_eod_signals(
             )
         )
     return out
+
+
+def generate_historic_signals_for_all_configs() -> None:
+    for strategy_config in STRATEGY_PROVIDER.iter_configs():
+        Log.info(f"Generating historic signals for strategy {strategy_config.name}")
+        generate_historic_signals_for_config(strategy_config)
+
+
+def generate_historic_signals_for_config(strategy_config: StrategyConfig) -> None:
+
+    exchange = "NYSE"  # hardcoded for now, replace with exchange abstraction later.
+
+    with next(get_db()) as db_session:
+
+        oldest_snapshot_date = (
+            StockIndexConstituentHandler(db_session)
+            .get_earliest_snapshot(SP500)
+            .snapshot_date
+        )
+
+        trading_days = get_all_trading_days_between(
+            exchange=exchange,
+            start=oldest_snapshot_date,
+            end=yesterday(),
+        )
+
+        for trading_day in trading_days:
+            Log.info(
+                f"generating historic signals for {trading_day} using {strategy_config.name}"
+            )
+            run_signal_picker(trading_day, strategy_config)

@@ -40,9 +40,6 @@ def get_nth_trading_day(exchange: str, as_of: date, offset: int) -> date:
     if not calendar:
         raise UnsupportedExchangeError(f"Exchange '{exchange}' is not supported yet")
 
-    offset = (
-        offset + 1 if offset > 1 else offset - 1
-    )  # we need to pad by a day to get correct result
     return calendar.get_nth_trading_day(as_of, offset)
 
 

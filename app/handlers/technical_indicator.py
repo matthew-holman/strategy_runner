@@ -44,6 +44,15 @@ class TechnicalIndicatorHandler:
         )
         return self.db_session.exec(stmt).all()
 
+    def get_by_date_and_security_id(
+        self, measurement_date: date, security_ids: int
+    ) -> TechnicalIndicator:
+        stmt = select(TechnicalIndicator).where(
+            TechnicalIndicator.security_id == security_ids,
+            TechnicalIndicator.measurement_date == measurement_date,
+        )
+        return self.db_session.exec(stmt).first()
+
     def get_combined_data_by_date_and_security_ids(
         self, measurement_date: date, security_ids: list[int]
     ) -> list[CombinedSignalRow]:
