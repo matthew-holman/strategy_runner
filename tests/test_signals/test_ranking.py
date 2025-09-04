@@ -1,6 +1,6 @@
 import pandas as pd
 
-from app.models.strategy_config import RankingFormula, SignalStrategyConfig
+from app.models.signal_strategy import RankingFormula, SignalStrategy
 from app.signals.ranking import apply_strategy_ranking
 
 
@@ -13,7 +13,7 @@ def test_apply_strategy_ranking_gaussian():
         ]
     )
 
-    config = SignalStrategyConfig(
+    config = SignalStrategy(
         strategy_id="test",
         name="RSI Gaussian",
         signal_filters=[],
@@ -42,7 +42,7 @@ def test_apply_strategy_ranking_log_ratio():
         ]
     )
 
-    config = SignalStrategyConfig(
+    config = SignalStrategy(
         strategy_id="test",
         name="Volume Spike",
         signal_filters=[],
@@ -71,7 +71,7 @@ def test_apply_strategy_ranking_linear():
         ]
     )
 
-    config = SignalStrategyConfig(
+    config = SignalStrategy(
         strategy_id="test",
         name="Close Pos Linear",
         signal_filters=[],
@@ -98,7 +98,7 @@ def test_apply_strategy_ranking_limits_top_n():
         ]
     )
 
-    config = SignalStrategyConfig(
+    config = SignalStrategy(
         strategy_id="test",
         name="Limit to 2",
         signal_filters=[],

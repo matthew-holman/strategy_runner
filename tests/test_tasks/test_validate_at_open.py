@@ -1,16 +1,16 @@
 import pandas as pd
 import pytest
 
-from app.models.strategy_config import FilterRule, RankingFormula, SignalStrategyConfig
+from app.models.signal_strategy import FilterRule, RankingFormula, SignalStrategy
 from app.tasks.validate_at_open import (
     apply_at_open_filters,  # adjust import if file differs
 )
 
 
 @pytest.fixture
-def mock_config_sma_pullback() -> SignalStrategyConfig:
+def mock_config_sma_pullback() -> SignalStrategy:
 
-    return SignalStrategyConfig(
+    return SignalStrategy(
         strategy_id="sma_pullback_buy",
         name="SMA PB",
         signal_filters=[],
@@ -51,7 +51,7 @@ def test_apply_at_open_filters_basic(monkeypatch, mock_config_sma_pullback):
     import app.tasks.validate_at_open as mod
 
     monkeypatch.setattr(
-        mod.STRATEGY_PROVIDER, "get_by_id", lambda sid: mock_config_sma_pullback
+        mod.SIGNAL_STRATEGY_PROVIDER, "get_by_id", lambda sid: mock_config_sma_pullback
     )
 
     out = apply_at_open_filters(df)
@@ -82,7 +82,7 @@ def test_apply_at_open_filters_missing_open_sets_none(
     import app.tasks.validate_at_open as mod
 
     monkeypatch.setattr(
-        mod.STRATEGY_PROVIDER, "get_by_id", lambda sid: mock_config_sma_pullback
+        mod.SIGNAL_STRATEGY_PROVIDER, "get_by_id", lambda sid: mock_config_sma_pullback
     )
 
     out = apply_at_open_filters(df)

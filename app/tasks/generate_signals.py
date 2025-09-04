@@ -10,11 +10,11 @@ from app.handlers.security import SecurityHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.models.eod_signal import EODSignal
+from app.models.signal_strategy import SignalStrategy
 from app.models.stock_index_constituent import SP500
-from app.models.strategy_config import SignalStrategyConfig
 from app.signals.filters import apply_default_signal_filters, apply_signal_filters
 from app.signals.ranking import apply_strategy_ranking
-from app.stratagies.signal_strategies import STRATEGY_PROVIDER
+from app.stratagies.signal_strategies import SIGNAL_STRATEGY_PROVIDER
 from app.utils.datetime_utils import yesterday
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_all_trading_days_between
@@ -23,7 +23,7 @@ BASE_CONFIG_DIR = Path(__file__).parent / ".." / ".." / "strategies"
 REQUIRED_COLS: Set[str] = {"security_id", "measurement_date", "ohlcv_daily_id", "score"}
 
 
-def run_signal_picker(generation_date: date, strategy_config: SignalStrategyConfig):
+def run_signal_picker(generation_date: date, strategy_config: SignalStrategy):
 
     with next(get_db()) as db_session:
         snapshot = StockIndexConstituentHandler(
@@ -71,7 +71,7 @@ def run_signal_picker(generation_date: date, strategy_config: SignalStrategyConf
 
 def generate_daily_signals():
 
-    for cfg in STRATEGY_PROVIDER.iter_configs():
+    for cfg in SIGNAL_STRATEGY_PROVIDER.iter_configs():
         Log.info(f"Generating signals using strategy {cfg.name}")
         # Run the signal picker for yesterday's trading
         run_signal_picker(generation_date=yesterday(), strategy_config=cfg)
@@ -79,7 +79,7 @@ def generate_daily_signals():
 
 def _map_ranked_df_to_eod_signals(
     ranked_df: pd.DataFrame,
-    strategy: SignalStrategyConfig,
+    strategy: SignalStrategy,
 ) -> List[EODSignal]:
     """
     Convert ranked signal dataframe into EODSignal models (no persistence).
@@ -117,12 +117,12 @@ def _map_ranked_df_to_eod_signals(
 
 
 def generate_historic_signals_for_all_configs() -> None:
-    for strategy_config in STRATEGY_PROVIDER.iter_configs():
+    for strategy_config in SIGNAL_STRATEGY_PROVIDER.iter_configs():
         Log.info(f"Generating historic signals for strategy {strategy_config.name}")
         generate_historic_signals_for_config(strategy_config)
 
 
-def generate_historic_signals_for_config(strategy_config: SignalStrategyConfig) -> None:
+def generate_historic_signals_for_config(strategy_config: SignalStrategy) -> None:
 
     exchange = "NYSE"  # hardcoded for now, replace with exchange abstraction later.
 

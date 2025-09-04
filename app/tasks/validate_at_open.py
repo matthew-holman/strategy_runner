@@ -15,7 +15,7 @@ from app.signals.filters import (
     apply_default_open_validation_filters,
     apply_validate_at_open_filters,
 )
-from app.stratagies.signal_strategies import STRATEGY_PROVIDER
+from app.stratagies.signal_strategies import SIGNAL_STRATEGY_PROVIDER
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_nth_trading_day
 
@@ -62,7 +62,7 @@ def apply_at_open_filters(df: pd.DataFrame) -> pd.DataFrame:
     validated_ids: set[int] = set()
 
     for strat_id, grp in out[~missing_open].groupby("strategy_id", sort=False):
-        cfg = STRATEGY_PROVIDER.get_by_id(strat_id)
+        cfg = SIGNAL_STRATEGY_PROVIDER.get_by_id(strat_id)
 
         # 1) Default open validation filters
         required = cfg.required_sod_columns()
