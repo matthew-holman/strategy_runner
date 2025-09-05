@@ -8,7 +8,7 @@ class EntryMode(str, Enum):
 
 
 class Unit(str, Enum):
-    ATR = "ATR"
+    ATR = "atr_14"
 
 
 class AtrMultiple(BaseModel):
@@ -25,13 +25,9 @@ class ExitConfig(BaseModel):
     target_offset: AtrMultiple
 
 
-class MaxHoldConfig(BaseModel):
-    bars: int = Field(ge=1)
-
-
 class ExecutionStrategy(BaseModel):
     version: int = 0
     id: str
     entry: EntryConfig
     exit: ExitConfig
-    max_hold: MaxHoldConfig
+    max_hold_days: int = Field(ge=1)

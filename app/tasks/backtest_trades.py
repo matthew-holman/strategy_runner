@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 
@@ -13,26 +13,34 @@ from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.models.backtest_run import BacktestRun
-from app.models.backtest_trade import BacktestTrade, ExitReason
+from app.models.backtest_trade import (
+    BacktestTrade,
+    EntryEvent,
+    EntryReason,
+    ExitEvent,
+    ExitReason,
+)
+from app.models.execution_strategy import EntryMode, ExecutionStrategy, Unit
 from app.models.signal_strategy import SignalStrategy
 from app.models.stock_index_constituent import SP500
+from app.models.technical_indicator import TechnicalIndicator
 from app.utils.datetime_utils import chunk_date_range
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_nth_trading_day
 
 
 @dataclass(frozen=True)
-class ExitEvent:
-    exit_date: date
-    exit_price: float
-    exit_reason: ExitReason
-    bars_held: int  # counts the entry bar as 1
+class TradeBounds:
+    stop_price: float
+    target_price: float
+    atr_used: Optional[float] = None
 
 
 def generate_trades_for_signals(
-    backtest_run: BacktestRun, strategy_config: SignalStrategy
+    backtest_run: BacktestRun,
+    signal_strategy: SignalStrategy,
+    execution_strategy: ExecutionStrategy,
 ) -> None:
-    config = backtest_run.backtest_config()
 
     with next(get_db()) as db_session:
         oldest_snapshot_date = (
@@ -48,11 +56,11 @@ def generate_trades_for_signals(
         ):
 
             signals = EODSignalHandler(db_session).get_by_strategy_between_dates(
-                strategy_config.strategy_id, chunk_start, chunk_end
+                signal_strategy.strategy_id, chunk_start, chunk_end
             )
             if not signals:
                 Log.info(
-                    f"No signals found for {strategy_config.strategy_id} in range {chunk_start}..{chunk_end}"
+                    f"No signals found for {signal_strategy.strategy_id} in range {chunk_start}..{chunk_end}"
                 )
                 return
             trades: List[BacktestTrade] = []
@@ -60,59 +68,57 @@ def generate_trades_for_signals(
                 security_id: int = int(eod_signal.security_id)
                 signal_date: date = eod_signal.signal_date
 
+                next_trading_day = get_nth_trading_day(
+                    exchange="NYSE", as_of=signal_date, offset=1
+                )  # TODO replace hardcoded exchange
+
+                window_end = get_nth_trading_day(
+                    exchange="NYSE",
+                    as_of=next_trading_day,
+                    offset=execution_strategy.max_hold_days,
+                )  # TODO replace hardcoded exchange
+
+                ohlcv_data = OHLCVDailyHandler(db_session).get_period_for_security(
+                    next_trading_day, window_end, security_id
+                )
+                candles = pd.DataFrame([r.model_dump() for r in ohlcv_data])
+
+                if candles.empty:
+                    continue
+
+                entry_event = compute_entry(candles, execution_strategy)
+                if entry_event is None:
+                    continue
+
                 technical_indicators = TechnicalIndicatorHandler(
                     db_session
-                ).get_by_date_and_security_id(signal_date, security_id)
+                ).get_by_date_and_security_id(entry_event.entry_date, security_id)
                 if (
                     technical_indicators.atr_14 is None
                     or technical_indicators.atr_14 <= 0
                 ):
                     Log.warning(
-                        f"Skipping trade for {strategy_config.strategy_id} on {signal_date} "
+                        f"Skipping trade for {signal_strategy.strategy_id} on {entry_event.entry_date}"
                         f"(security_id={security_id}): ATR was {technical_indicators.atr_14}, "
                         "cannot compute stop/target or risk-adjusted metrics. "
                         "TODO: persist as skipped trade instead of dropping."
                     )
                     continue
 
-                entry_day = get_nth_trading_day(
-                    exchange="NYSE", as_of=signal_date, offset=1
-                )  # TODO replace hardcoded exchange
-                forward_end = get_nth_trading_day(
-                    exchange="NYSE", as_of=entry_day, offset=config.max_holding_days - 1
+                trade_bounds = compute_trade_bounds(
+                    entry_event, execution_strategy, technical_indicators
                 )
 
-                ohlcv_data = OHLCVDailyHandler(db_session).get_period_for_security(
-                    entry_day, forward_end, security_id
-                )
-                candles = pd.DataFrame([r.model_dump() for r in ohlcv_data])
-
-                if candles.empty or entry_day not in set(candles["candle_date"]):
-                    continue
-
-                entry_bar = candles[candles["candle_date"] == entry_day].iloc[0]
-
-                # for now assume entry price is open price
-                # TODO add entry and exit strategy to strategy config
-                entry_price = float(entry_bar["open"])
-                stop_price = entry_price - config.k_stop * technical_indicators.atr_14
-                target_price = (
-                    entry_price + config.k_target * technical_indicators.atr_14
-                )
-
-                exit_event = decide_exit_for_long(
-                    stop_price=stop_price,
-                    target_price=target_price,
+                exit_event = compute_exit(
+                    trade_bounds,
                     forward_bars=candles,
-                    max_holding_days=config.max_holding_days,
-                    conservative_intra_bar_rule=config.conservative_intra_bar_rule,
-                    conservative_gap_rule=config.conservative_gap_rule,
+                    execution_strategy=execution_strategy,
                 )
 
-                pnl_percent = (exit_event.exit_price / entry_price - 1.0) * 100.0
-                risk_per_share = entry_price - stop_price
+                pnl_percent = (exit_event.exit_price / entry_event.price - 1.0) * 100.0
+                risk_per_share = entry_event.price - trade_bounds.stop_price
                 r_multiple = (
-                    ((exit_event.exit_price - entry_price) / risk_per_share)
+                    ((exit_event.exit_price - entry_event.price) / risk_per_share)
                     if risk_per_share > 0
                     else 0.0
                 )
@@ -120,14 +126,14 @@ def generate_trades_for_signals(
                 trades.append(
                     BacktestTrade(
                         eod_signal_id=eod_signal.id,
-                        strategy_id=strategy_config.strategy_id,
+                        strategy_id=signal_strategy.strategy_id,
                         security_id=security_id,
-                        entry_date=entry_day,
+                        entry_date=entry_event.entry_date,
                         exit_date=exit_event.exit_date,
-                        entry_price=entry_price,
+                        entry_price=entry_event.price,
                         exit_price=exit_event.exit_price,
-                        stop_price=stop_price,
-                        target_price=target_price,
+                        stop_price=trade_bounds.stop_price,
+                        target_price=trade_bounds.target_price,
                         atr_used=technical_indicators.atr_14,
                         pnl_percent=pnl_percent,
                         r_multiple=r_multiple,
@@ -140,52 +146,111 @@ def generate_trades_for_signals(
         db_session.commit()
 
 
-def decide_exit_for_long(
-    stop_price: float,
-    target_price: float,
+def compute_exit(
+    trade_bounds: TradeBounds,
     forward_bars: pd.DataFrame,
-    max_holding_days: int,
-    conservative_intra_bar_rule: bool = True,
-    conservative_gap_rule: bool = True,
+    execution_strategy: ExecutionStrategy,
 ) -> ExitEvent:
+
     bars = forward_bars.sort_values("candle_date").reset_index(drop=True)
     bars_held = 0
 
-    for i, bar in bars.iterrows():
-        d = bar["candle_date"]
-        o, h, l, c = (
-            float(bar["open"]),
+    for bar in bars.iterrows():
+        candle_date = bar["candle_date"]
+        high, low, close = (
             float(bar["high"]),
             float(bar["low"]),
             float(bar["close"]),
         )
         bars_held += 1
 
-        if i == 0 and conservative_gap_rule:
-            if o <= stop_price:
-                return ExitEvent(d, o, ExitReason.stop, bars_held)
-            if o >= target_price:
-                return ExitEvent(d, o, ExitReason.target, bars_held)
+        hit_stop = low <= trade_bounds.stop_price
+        hit_target = high >= trade_bounds.target_price
 
-        hit_stop = l <= stop_price
-        hit_target = h >= target_price
-
+        # in this scenario assume we hit stop first
+        # no way to know for sure but testing is best if conservative
         if hit_stop and hit_target:
             return ExitEvent(
-                d,
-                stop_price if conservative_intra_bar_rule else target_price,
-                ExitReason.stop if conservative_intra_bar_rule else ExitReason.target,
+                candle_date,
+                trade_bounds.stop_price,
+                ExitReason.stop,
                 bars_held,
             )
         if hit_stop:
-            return ExitEvent(d, stop_price, ExitReason.stop, bars_held)
+            return ExitEvent(
+                candle_date, trade_bounds.stop_price, ExitReason.stop, bars_held
+            )
         if hit_target:
-            return ExitEvent(d, target_price, ExitReason.target, bars_held)
+            return ExitEvent(
+                candle_date, trade_bounds.target_price, ExitReason.target, bars_held
+            )
 
-        if bars_held >= max_holding_days:
-            return ExitEvent(d, c, ExitReason.time_stop, bars_held)
+        if bars_held >= execution_strategy.max_hold_days:
+            return ExitEvent(candle_date, close, ExitReason.time_stop, bars_held)
 
     last = bars.iloc[-1]
     return ExitEvent(
         last["candle_date"], float(last["close"]), ExitReason.time_stop, bars_held
+    )
+
+
+def compute_entry(
+    candles: pd.DataFrame,
+    execution_strategy: ExecutionStrategy,
+) -> Optional[EntryEvent]:
+    if candles.empty:
+        return None
+
+    if execution_strategy.entry.mode == EntryMode.IMMEDIATE_AT_OPEN:
+        bar = candles.iloc[0]
+        return EntryEvent(
+            entry_date=pd.to_datetime(bar["candle_date"]).date(),
+            price=float(bar["open"]),
+            entry_reason=EntryReason.IMMEDIATE_AT_OPEN,
+            bars_waited=0,
+        )
+
+    # TODO: add WAIT logic later
+    return None
+
+
+def compute_trade_bounds(
+    entry_event: EntryEvent,
+    execution_strategy: ExecutionStrategy,
+    technical_indicators: TechnicalIndicator,
+) -> TradeBounds:
+    """
+    v0 behavior: ATR-based stop/target around entry_price.
+    Designed to extend later with percent/points units without touching call sites.
+    """
+    stop_off = execution_strategy.exit.stop_offset
+    target_off = execution_strategy.exit.target_offset
+
+    atr_value: Optional[float] = None
+
+    def resolve_offset(unit: Unit, multiple: float) -> float:
+        nonlocal atr_value
+        if unit == Unit.ATR:
+            # pull the same ATR you already compute (14 by default in BacktestConfig)
+            atr = getattr(technical_indicators, "atr_14", None)
+            if atr is None or atr <= 0:
+                raise ValueError(
+                    "ATR is required and must be positive for ATR-based offsets."
+                )
+            atr_value = float(atr)
+            return multiple * atr_value
+        elif unit.name == "PERCENT":  # in case you add later
+            return entry_event.price * multiple
+        elif unit.name == "POINTS":  # in case you add later
+            return multiple
+        else:
+            raise NotImplementedError(f"Unsupported offset unit: {unit}")
+
+    stop_delta = resolve_offset(stop_off.unit, float(stop_off.multiple))
+    target_delta = resolve_offset(target_off.unit, float(target_off.multiple))
+
+    return TradeBounds(
+        stop_price=float(entry_event.price - stop_delta),
+        target_price=float(entry_event.price + target_delta),
+        atr_used=atr_value,
     )

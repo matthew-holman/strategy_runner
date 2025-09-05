@@ -5,8 +5,8 @@
     "mode": "IMMEDIATE_AT_OPEN"
   },
   "exit": {
-    "stop_offset": { "unit": "ATR", "multiple": 1.0 },
-    "target_offset": { "unit": "ATR", "multiple": 2.0 }
+    "stop_offset": { "unit": "atr_14", "multiple": 1.0 },
+    "target_offset": { "unit": "atr_14", "multiple": 2.0 }
   },
   "max_hold": {
     "bars": 10

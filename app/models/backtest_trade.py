@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date
 from enum import Enum
 from uuid import UUID, uuid4
@@ -16,6 +17,28 @@ class ExitReason(str, Enum):
     time_stop = "time_stop"
 
 
+@dataclass(frozen=True)
+class ExitEvent:
+    exit_date: date
+    exit_price: float
+    exit_reason: ExitReason
+    bars_held: int  # counts the entry bar as 1
+
+
+class EntryReason(str, Enum):
+    IMMEDIATE_AT_OPEN = "immediate_at_open"
+    WAIT_TRIGGER = "wait_trigger"
+    # later: breakout_above, limit_at, touch_or_better, etc.
+
+
+@dataclass(frozen=True)
+class EntryEvent:
+    entry_date: date
+    price: float
+    entry_reason: EntryReason
+    bars_waited: int
+
+
 class BacktestTradeBase(BaseModel, table=false()):  # type: ignore[call-arg]
     """
     One simulated trade produced by the backtesting runner.
@@ -24,7 +47,8 @@ class BacktestTradeBase(BaseModel, table=false()):  # type: ignore[call-arg]
     run_id: UUID = Field(default_factory=uuid4, index=True)
 
     eod_signal_id: int = Field(foreign_key="eod_signal.id", index=True)
-    strategy_id: str = Field(index=True)
+    signal_strategy_id: str = Field(index=True)
+    execution_strategy_id: str = Field(index=True)
     security_id: int = Field(index=True)
 
     # Execution lifecycle
