@@ -46,7 +46,7 @@ class StrategyProvider(Generic[T]):
 
         return cls(by_id)
 
-    def iter_configs(self) -> Iterator[T]:
+    def iter_strategies(self) -> Iterator[T]:
         for sid in sorted(self._by_id):
             yield self._by_id[sid]
 

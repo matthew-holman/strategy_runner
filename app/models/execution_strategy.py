@@ -27,7 +27,7 @@ class ExitConfig(BaseModel):
 
 class ExecutionStrategy(BaseModel):
     version: int = 0
-    id: str
+    strategy_id: str
     entry: EntryConfig
     exit: ExitConfig
     max_hold_days: int = Field(ge=1)

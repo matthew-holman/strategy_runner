@@ -12,7 +12,6 @@ from app.handlers.eod_signal import EODSignalHandler
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
-from app.models.backtest_run import BacktestRun
 from app.models.backtest_trade import (
     BacktestTrade,
     EntryEvent,
@@ -37,7 +36,6 @@ class TradeBounds:
 
 
 def generate_trades_for_signals(
-    backtest_run: BacktestRun,
     signal_strategy: SignalStrategy,
     execution_strategy: ExecutionStrategy,
 ) -> None:
@@ -126,7 +124,8 @@ def generate_trades_for_signals(
                 trades.append(
                     BacktestTrade(
                         eod_signal_id=eod_signal.id,
-                        strategy_id=signal_strategy.strategy_id,
+                        signal_strategy_id=signal_strategy.strategy_id,
+                        execution_strategy_id=execution_strategy.strategy_id,
                         security_id=security_id,
                         entry_date=entry_event.entry_date,
                         exit_date=exit_event.exit_date,
@@ -155,7 +154,7 @@ def compute_exit(
     bars = forward_bars.sort_values("candle_date").reset_index(drop=True)
     bars_held = 0
 
-    for bar in bars.iterrows():
+    for _i, bar in bars.iterrows():
         candle_date = bar["candle_date"]
         high, low, close = (
             float(bar["high"]),

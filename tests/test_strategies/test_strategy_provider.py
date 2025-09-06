@@ -10,7 +10,7 @@ from stratagies.signal_strategies import SignalStrategyProvider
 def test_provider_loads_and_orders(tmp_path: Path):
     write_min_strategy_json(tmp_path, "sma_pullback_buy")
     provider = SignalStrategyProvider.from_directory(tmp_path)
-    cfgs = list(provider.iter_configs())
+    cfgs = list(provider.iter_strategies())
     assert len(cfgs) == 1
     assert cfgs[0].strategy_id == "sma_pullback_buy"
 
