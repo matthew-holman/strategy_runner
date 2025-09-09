@@ -1,10 +1,12 @@
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
 
 class EntryMode(str, Enum):
     IMMEDIATE_AT_OPEN = "IMMEDIATE_AT_OPEN"
+    PERCENT_UNDER_OPEN = "PERCENT_UNDER_OPEN"
 
 
 class Unit(str, Enum):
@@ -18,6 +20,12 @@ class AtrMultiple(BaseModel):
 
 class EntryConfig(BaseModel):
     mode: EntryMode = EntryMode.IMMEDIATE_AT_OPEN
+    percent_below_open: Optional[float] = Field(
+        default=None, description="e.g. 0.01 for 1% under the bar's open"
+    )
+    valid_for_bars: Optional[int] = Field(
+        default=None, ge=1, description="Buy window (bars) from the start bar"
+    )
 
 
 class ExitConfig(BaseModel):

@@ -1,0 +1,20 @@
+{
+  "strategy_id": "breakout_10d_continuation",
+  "name": "Breakout of 10d High with Trend + Volume",
+  "signal_filters": [
+    { "indicator": "sma_50", "comparison": "<", "value": 1.0, "comparison_field": "close", "note": "Uptrend: price > SMA50" },
+    { "indicator": "close", "comparison": ">", "value": 0.99, "comparison_field": "high_10d", "note": "Close within 1% of 10d high (pressure under the lid)" },
+    { "indicator": "volume", "comparison": ">", "value": 1.2, "comparison_field": "avg_vol_20d", "note": "Volume confirmation" },
+    { "indicator": "atr_14", "comparison": "<", "value": 0.04, "comparison_field": "open", "note": "Avoid extreme volatility: ATR < 4% of price" }
+  ],
+  "validate_at_open_filters": [
+    { "indicator": "next_open", "comparison": ">", "value": 1.001, "comparison_field": "high_10d", "note": "Open breaks above 10d high by 0.1%" },
+    { "indicator": "next_open", "comparison": "<", "value": 1.02, "comparison_field": "close", "note": "Avoid chasing >2% gap" }
+  ],
+  "ranking": [
+    { "indicator": "volume", "function": "log_ratio", "denominator": "avg_vol_20d", "weight": 0.5, "max": 6 },
+    { "indicator": "close", "function": "linear", "weight": 0.3 },
+    { "indicator": "rsi_14", "function": "gaussian", "center": 55, "sigma": 12, "weight": 0.2 }
+  ],
+  "max_signals_per_day": 5
+}

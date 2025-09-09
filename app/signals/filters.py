@@ -43,7 +43,7 @@ def apply_default_open_validation_filters(
     df = df[df["next_open"] >= PRICE_FLOOR]
 
     # 3) Liquidity sanity check
-    df = df[df["early_volume"] >= (MIN_EARLY_VOL_PERCENT * df["avg_vol_20d"])]
+    # df = df[df["early_volume"] >= (MIN_EARLY_VOL_PERCENT * df["avg_vol_20d"])]
 
     # 4) Gap limit: |open/close - 1| <= MAX_GAP_ABS
     gap = (df["next_open"] / df["close"]) - 1.0

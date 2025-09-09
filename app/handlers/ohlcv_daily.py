@@ -58,3 +58,12 @@ class OHLCVDailyHandler:
         )
         result = self.db_session.exec(stmt).all()
         return {row for row in result if row is not None}
+
+    def get_open_for_security(
+        self, candle_date: date, security_id: int
+    ) -> float | None:
+        stmt = select(OHLCVDaily.open).where(
+            OHLCVDaily.security_id == security_id,
+            OHLCVDaily.candle_date == candle_date,
+        )
+        return self.db_session.exec(stmt).first()

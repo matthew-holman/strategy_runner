@@ -1,0 +1,22 @@
+{
+  "strategy_id": "macd_trend_momentum",
+  "name": "MACD Turn-Up in Established Uptrend",
+  "signal_filters": [
+    { "indicator": "sma_200", "comparison": "<", "value": 1.0, "comparison_field": "close", "note": "Price above SMA200" },
+    { "indicator": "close", "comparison": ">", "value": 1.0, "comparison_field": "ema_20", "note": "Price above EMA20 (momentum baseline)" },
+    { "indicator": "macd", "comparison": ">", "value": 0.0, "note": "MACD above zero-line" },
+    { "indicator": "macd_hist", "comparison": ">", "value": 0.0, "note": "Histogram positive (turning up)" },
+    { "indicator": "volume", "comparison": ">", "value": 1.1, "comparison_field": "avg_vol_20d", "note": "Participation" },
+    { "indicator": "atr_14", "comparison": "<", "value": 0.04, "comparison_field": "open", "note": "ATR < 4% of price" }
+  ],
+  "validate_at_open_filters": [
+    { "indicator": "next_open", "comparison": ">", "value": 0.99, "comparison_field": "close", "note": "Avoid weak open" },
+    { "indicator": "next_open", "comparison": "<", "value": 1.02, "comparison_field": "close", "note": "Avoid chasey gap >2%" }
+  ],
+  "ranking": [
+    { "indicator": "macd_hist", "function": "linear", "weight": 0.45 },
+    { "indicator": "volume", "function": "log_ratio", "denominator": "avg_vol_20d", "weight": 0.35, "max": 5 },
+    { "indicator": "close", "function": "linear", "weight": 0.2 }
+  ],
+  "max_signals_per_day": 5
+}

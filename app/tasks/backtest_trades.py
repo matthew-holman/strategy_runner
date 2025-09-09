@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import List, Optional
+from uuid import UUID
 
 import pandas as pd
 
@@ -38,6 +39,7 @@ class TradeBounds:
 def generate_trades_for_signals(
     signal_strategy: SignalStrategy,
     execution_strategy: ExecutionStrategy,
+    backtest_run_id: UUID,
 ) -> None:
 
     with next(get_db()) as db_session:
@@ -53,7 +55,9 @@ def generate_trades_for_signals(
             oldest_snapshot_date, today().date(), timedelta(days=365)
         ):
 
-            signals = EODSignalHandler(db_session).get_by_strategy_between_dates(
+            signals = EODSignalHandler(
+                db_session
+            ).get_validated_by_strategy_between_dates(
                 signal_strategy.strategy_id, chunk_start, chunk_end
             )
             if not signals:
@@ -86,8 +90,11 @@ def generate_trades_for_signals(
 
                 entry_event = compute_entry(candles, execution_strategy)
                 if entry_event is None:
+                    Log.info(
+                        f"Entry setup did not meet criteria for security_id={security_id} "
+                        f"on {signal_date} using execution strategy {execution_strategy.strategy_id}"
+                    )
                     continue
-
                 technical_indicators = TechnicalIndicatorHandler(
                     db_session
                 ).get_by_date_and_security_id(entry_event.entry_date, security_id)
@@ -138,6 +145,7 @@ def generate_trades_for_signals(
                         r_multiple=r_multiple,
                         bars_held=exit_event.bars_held,
                         exit_reason=exit_event.exit_reason,
+                        run_id=backtest_run_id,
                     )
                 )
 
@@ -200,7 +208,9 @@ def compute_entry(
     if candles.empty:
         return None
 
-    if execution_strategy.entry.mode == EntryMode.IMMEDIATE_AT_OPEN:
+    entry_mode = execution_strategy.entry.mode
+
+    if entry_mode == EntryMode.IMMEDIATE_AT_OPEN:
         bar = candles.iloc[0]
         return EntryEvent(
             entry_date=pd.to_datetime(bar["candle_date"]).date(),
@@ -208,6 +218,29 @@ def compute_entry(
             entry_reason=EntryReason.IMMEDIATE_AT_OPEN,
             bars_waited=0,
         )
+
+    if entry_mode == EntryMode.PERCENT_UNDER_OPEN:
+        pct = execution_strategy.entry.percent_below_open
+        window = execution_strategy.entry.valid_for_bars
+        if pct is None or pct <= 0 or window is None or window < 1:
+            return None
+
+        window_end = min(window, len(candles))
+        for i in range(window_end):
+            bar = candles.iloc[i]
+            open_price = float(bar["open"])
+            low_price = float(bar["low"])
+            buy_price = open_price * (1.0 - pct)
+
+            if low_price <= buy_price:
+                # Floating definition: fill at limit; open is always > limit here.
+                return EntryEvent(
+                    entry_date=pd.to_datetime(bar["candle_date"]).date(),
+                    price=float(buy_price),
+                    entry_reason=EntryReason.WAIT_TRIGGER,
+                    bars_waited=i,
+                )
+        return None
 
     # TODO: add WAIT logic later
     return None

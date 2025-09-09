@@ -1,0 +1,21 @@
+{
+  "strategy_id": "ema20_pullback_confirm",
+  "name": "EMA20 Pullback in Uptrend with Quality Filters",
+  "signal_filters": [
+    { "indicator": "sma_50", "comparison": "<", "value": 1.0, "comparison_field": "close", "note": "Uptrend: price > SMA50" },
+    { "indicator": "close", "comparison": "<", "value": 1.0, "comparison_field": "ema_20", "note": "Pullback below EMA20 (tighter than SMA20)" },
+    { "indicator": "rsi_14", "comparison": "between", "min": 40, "max": 60, "value": 0.0, "note": "Healthy trend, not overbought" },
+    { "indicator": "volume", "comparison": ">", "value": 1.1, "comparison_field": "avg_vol_20d", "note": "Some participation" },
+    { "indicator": "atr_14", "comparison": "<", "value": 0.035, "comparison_field": "open", "note": "Avoid high ATR whipsaws" }
+  ],
+  "validate_at_open_filters": [
+    { "indicator": "next_open", "comparison": ">", "value": 0.995, "comparison_field": "close", "note": "No weak open" },
+    { "indicator": "next_open", "comparison": "<", "value": 1.015, "comparison_field": "close", "note": "Avoid frothy gap >1.5%" }
+  ],
+  "ranking": [
+    { "indicator": "volume", "function": "log_ratio", "denominator": "avg_vol_20d", "weight": 0.4, "max": 5 },
+    { "indicator": "rsi_14", "function": "gaussian", "center": 50, "sigma": 10, "weight": 0.3 },
+    { "indicator": "close", "function": "linear", "weight": 0.3 }
+  ],
+  "max_signals_per_day": 5
+}
