@@ -1,10 +1,18 @@
 {
   "version": 0,
   "strategy_id": "exec_open_mr_harvest_1x1_5x_12d",
-  "entry": { "mode": "IMMEDIATE_AT_OPEN" },
+  "entry": {
+    "mode": "IMMEDIATE_AT_OPEN"
+  },
   "exit": {
-    "stop_offset":   { "unit": "atr_14", "multiple": 1.0 },
-    "target_offset": { "unit": "atr_14", "multiple": 1.5 }
+    "stop_offset": {
+      "unit": "atr_14",
+      "multiple": 1.0
+    },
+    "target_offset": {
+      "unit": "atr_14",
+      "multiple": 1.5
+    }
   },
   "max_hold_days": 12
 }

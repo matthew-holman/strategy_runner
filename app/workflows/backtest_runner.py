@@ -11,7 +11,6 @@ from app.utils.log_setup import configure_logging
 
 
 def main() -> int:
-
     configure_logging(logger_name="backtest-runner", level=logging.INFO, use_utc=False)
     try:
         for signal_strategy in SIGNAL_STRATEGY_PROVIDER.iter_strategies():

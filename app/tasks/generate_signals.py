@@ -24,7 +24,6 @@ REQUIRED_COLS: Set[str] = {"security_id", "measurement_date", "ohlcv_daily_id", 
 
 
 def run_signal_picker(generation_date: date, signal_strategy: SignalStrategy):
-
     with next(get_db()) as db_session:
         snapshot = StockIndexConstituentHandler(
             db_session
@@ -71,7 +70,6 @@ def run_signal_picker(generation_date: date, signal_strategy: SignalStrategy):
 
 
 def generate_daily_signals():
-
     for cfg in SIGNAL_STRATEGY_PROVIDER.iter_strategies():
         Log.info(f"Generating signals using strategy {cfg.name}")
         # Run the signal picker for yesterday's trading
@@ -124,11 +122,9 @@ def generate_historic_signals_for_all_strategies() -> None:
 
 
 def generate_historic_signals_for_strategy(signal_strategy: SignalStrategy) -> None:
-
     exchange = "NYSE"  # hardcoded for now, replace with exchange abstraction later.
 
     with next(get_db()) as db_session:
-
         oldest_snapshot_date = (
             StockIndexConstituentHandler(db_session)
             .get_earliest_snapshot(SP500)

@@ -17,7 +17,6 @@ from app.utils.log_wrapper import Log
 
 
 def main() -> int:
-
     configure_logging(logger_name="eod-tasks", level=logging.INFO, use_utc=False)
 
     Log.info("Starting end of day tasks...")

@@ -180,7 +180,6 @@ def _create_initial_validation_dataframe(
     signal_date: date,
     db_session: Session,
 ) -> pd.DataFrame:
-
     if not signals:
         Log.info("No signals found to validate.")
         return pd.DataFrame()

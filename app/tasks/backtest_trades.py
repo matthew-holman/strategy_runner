@@ -41,7 +41,6 @@ def generate_trades_for_signals(
     execution_strategy: ExecutionStrategy,
     backtest_run_id: UUID,
 ) -> None:
-
     with next(get_db()) as db_session:
         oldest_snapshot_date = (
             StockIndexConstituentHandler(db_session)
@@ -164,7 +163,6 @@ def compute_exit(
     forward_bars: pd.DataFrame,
     execution_strategy: ExecutionStrategy,
 ) -> ExitEvent:
-
     bars = forward_bars.sort_values("candle_date").reset_index(drop=True)
     bars_held = 0
 

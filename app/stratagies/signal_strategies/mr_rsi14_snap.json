@@ -2,20 +2,79 @@
   "strategy_id": "mr_rsi14_snap",
   "name": "Mean Reversion Snap: RSI14 Oversold Above 200SMA",
   "signal_filters": [
-    { "indicator": "sma_200", "comparison": "<", "value": 1.0, "comparison_field": "close", "note": "Primary uptrend: price > SMA200" },
-    { "indicator": "close", "comparison": ">", "value": 0.97, "comparison_field": "sma_200", "note": "Not too deep undercut of trend (>= -3% from SMA200)" },
-    { "indicator": "close", "comparison": "<", "value": 1.0, "comparison_field": "ema_20", "note": "Pullback below EMA20" },
-    { "indicator": "rsi_14", "comparison": "between", "min": 20, "max": 35, "value": 0.0, "note": "Short-term oversold but not broken" },
-    { "indicator": "atr_14", "comparison": "<", "value": 0.04, "comparison_field": "open", "note": "Avoid extreme volatility: ATR < 4% of price" }
+    {
+      "indicator": "sma_200",
+      "comparison": "<",
+      "value": 1.0,
+      "comparison_field": "close",
+      "note": "Primary uptrend: price > SMA200"
+    },
+    {
+      "indicator": "close",
+      "comparison": ">",
+      "value": 0.97,
+      "comparison_field": "sma_200",
+      "note": "Not too deep undercut of trend (>= -3% from SMA200)"
+    },
+    {
+      "indicator": "close",
+      "comparison": "<",
+      "value": 1.0,
+      "comparison_field": "ema_20",
+      "note": "Pullback below EMA20"
+    },
+    {
+      "indicator": "rsi_14",
+      "comparison": "between",
+      "min": 20,
+      "max": 35,
+      "value": 0.0,
+      "note": "Short-term oversold but not broken"
+    },
+    {
+      "indicator": "atr_14",
+      "comparison": "<",
+      "value": 0.04,
+      "comparison_field": "open",
+      "note": "Avoid extreme volatility: ATR < 4% of price"
+    }
   ],
   "validate_at_open_filters": [
-    { "indicator": "next_open", "comparison": "<", "value": 1.01, "comparison_field": "close", "note": "Avoid big gap-ups that kill RR" },
-    { "indicator": "next_open", "comparison": ">", "value": 0.98, "comparison_field": "close", "note": "Avoid panic gaps down >2%" }
+    {
+      "indicator": "next_open",
+      "comparison": "<",
+      "value": 1.01,
+      "comparison_field": "close",
+      "note": "Avoid big gap-ups that kill RR"
+    },
+    {
+      "indicator": "next_open",
+      "comparison": ">",
+      "value": 0.98,
+      "comparison_field": "close",
+      "note": "Avoid panic gaps down >2%"
+    }
   ],
   "ranking": [
-    { "indicator": "rsi_14", "function": "gaussian", "center": 28, "sigma": 6, "weight": 0.45 },
-    { "indicator": "close", "function": "linear", "weight": 0.25 },
-    { "indicator": "volume", "function": "log_ratio", "denominator": "avg_vol_20d", "weight": 0.30, "max": 4 }
+    {
+      "indicator": "rsi_14",
+      "function": "gaussian",
+      "center": 28,
+      "sigma": 6,
+      "weight": 0.45
+    },
+    {
+      "indicator": "close",
+      "function": "linear",
+      "weight": 0.25
+    },
+    {
+      "indicator": "volume",
+      "function": "log_ratio",
+      "denominator": "avg_vol_20d",
+      "weight": 0.30,
+      "max": 4
+    }
   ],
   "max_signals_per_day": 5
 }

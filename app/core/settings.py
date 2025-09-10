@@ -1,14 +1,13 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import ClassVar
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
 
-class Settings(BaseSettings):
 
+class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=env_path,
         env_file_encoding="utf-8",
@@ -48,7 +47,8 @@ class Settings(BaseSettings):
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
+
 # Dependency-safe and test-friendly
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     return Settings()

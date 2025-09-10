@@ -86,7 +86,6 @@ def compute_daily_indicators_for_all_securities(
 
 
 def heal_missing_technical_indicators() -> None:
-
     with next(get_db()) as db_session:
         ic_handler = StockIndexConstituentHandler(db_session)
         security_handler = SecurityHandler(db_session)

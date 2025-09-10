@@ -7,7 +7,6 @@ from app.utils.log_wrapper import Log
 
 
 def check_for_missing_metadata():
-
     with next(get_db()) as db_session:
         security_handler = SecurityHandler(db_session)
 

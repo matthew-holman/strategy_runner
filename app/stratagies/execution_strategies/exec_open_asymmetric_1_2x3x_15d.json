@@ -1,10 +1,18 @@
 {
   "version": 0,
   "strategy_id": "exec_open_asymmetric_1_2x3x_15d",
-  "entry": { "mode": "IMMEDIATE_AT_OPEN" },
+  "entry": {
+    "mode": "IMMEDIATE_AT_OPEN"
+  },
   "exit": {
-    "stop_offset":   { "unit": "atr_14", "multiple": 1.2 },
-    "target_offset": { "unit": "atr_14", "multiple": 3.0 }
+    "stop_offset": {
+      "unit": "atr_14",
+      "multiple": 1.2
+    },
+    "target_offset": {
+      "unit": "atr_14",
+      "multiple": 3.0
+    }
   },
   "max_hold_days": 15
 }

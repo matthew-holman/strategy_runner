@@ -24,7 +24,6 @@ from app.utils.trading_calendar import (
 
 
 def daily_candle_fetch():
-
     with next(get_db()) as db_session:
         stock_ic_handler = StockIndexConstituentHandler(db_session)
         latest_sp500_snapshot = stock_ic_handler.get_most_recent_snapshot(SP500)
