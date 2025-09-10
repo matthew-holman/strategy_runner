@@ -1,10 +1,10 @@
 import logging
 
-from utils.log_setup import configure_logging
-
+from app.stratagies.signal_strategies import SIGNAL_STRATEGY_PROVIDER
 from app.tasks.validate_at_open import validate_signals_from_previous_trading_day
 from app.utils import Log
 from app.utils.datetime_utils import today_is_a_weekend
+from app.utils.log_setup import configure_logging
 
 configure_logging(logger_name="sod-tasks", level=logging.INFO, use_utc=False)
 
@@ -15,7 +15,11 @@ def main():
         if today_is_a_weekend():
             Log.info("Today is a weekend, exchanges are closed.")
         else:
-            validate_signals_from_previous_trading_day()
+            for signal_strategy in SIGNAL_STRATEGY_PROVIDER.iter_strategies():
+                Log.info(
+                    f"Generating historic signals for strategy {signal_strategy.name}"
+                )
+                validate_signals_from_previous_trading_day(signal_strategy)
     except Exception as e:
         Log.critical(f"Daily tasks failed with exception: {e}")
 

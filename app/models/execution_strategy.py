@@ -39,3 +39,4 @@ class ExecutionStrategy(BaseModel):
     entry: EntryConfig
     exit: ExitConfig
     max_hold_days: int = Field(ge=1)
+    active: bool = False

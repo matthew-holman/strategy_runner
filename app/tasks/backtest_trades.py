@@ -64,7 +64,7 @@ def generate_trades_for_signals(
                 Log.info(
                     f"No signals found for {signal_strategy.strategy_id} in range {chunk_start}..{chunk_end}"
                 )
-                return
+                continue
             trades: List[BacktestTrade] = []
             for eod_signal in signals:
                 security_id: int = int(eod_signal.security_id)
@@ -149,8 +149,14 @@ def generate_trades_for_signals(
                     )
                 )
 
-            backtest_handler.save_all(trades)
-        db_session.commit()
+            if trades:
+                backtest_handler.save_all(trades)
+                db_session.commit()
+            else:
+                Log.info(
+                    f"[BT] No trades generated for chunk {chunk_start}..{chunk_end} "
+                    f"(signal={signal_strategy.strategy_id}, exec={execution_strategy.strategy_id})."
+                )
 
 
 def compute_exit(

@@ -1,0 +1,12 @@
+{
+  "version": 0,
+  "strategy_id": "exec_open_baseline_1x2x_10d",
+  "entry": {
+    "mode": "IMMEDIATE_AT_OPEN"
+  },
+  "exit": {
+    "stop_offset": { "unit": "atr_14", "multiple": 1.0 },
+    "target_offset": { "unit": "atr_14", "multiple": 2.0 }
+  },
+  "max_hold_days": 10
+}

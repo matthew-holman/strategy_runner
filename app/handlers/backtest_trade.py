@@ -6,7 +6,7 @@ from sqlmodel import Session
 from app.core.db import upsert
 from app.models.backtest_trade import BacktestTrade
 
-UNIQUE_CONSTRAINT = "uq_backtest_trade_run_signal"
+UNIQUE_CONSTRAINT = "uq_backtest_trade_signal_execution_strategy_per_run"
 
 
 @dataclass

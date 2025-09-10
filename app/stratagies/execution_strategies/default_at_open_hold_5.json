@@ -1,6 +1,7 @@
 {
   "version": 0,
-  "strategy_id": "exec_current_defaults_v0",
+  "active": true,
+  "strategy_id": "default_at_open_hold_5",
   "entry": {
     "mode": "IMMEDIATE_AT_OPEN"
   },
@@ -8,5 +9,5 @@
     "stop_offset": { "unit": "atr_14", "multiple": 1.0 },
     "target_offset": { "unit": "atr_14", "multiple": 2.0 }
   },
-  "max_hold_days": 10
+  "max_hold_days": 5
 }

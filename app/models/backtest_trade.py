@@ -75,9 +75,11 @@ class BacktestTrade(BacktestTradeBase, table=True):  # type: ignore[call-arg]
 
     id: int | None = Field(default=None, primary_key=True)
     __table_args__ = (
-        # Prevent duplicate trades for the same signal within one run
         UniqueConstraint(
-            "run_id", "eod_signal_id", name="uq_backtest_trade_run_signal"
+            "run_id",
+            "eod_signal_id",
+            "execution_strategy_id",
+            name="uq_backtest_trade_signal_execution_strategy_per_run",
         ),
         {"extend_existing": True},
     )
