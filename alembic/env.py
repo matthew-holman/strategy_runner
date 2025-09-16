@@ -1,16 +1,15 @@
 import importlib
 import pkgutil
+
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-from alembic import context
+from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-from app.core import settings
-from app.core.settings import get_settings
 import app.models
+
+from alembic import context
+from app.core.settings import get_settings
 
 for _, module_name, _ in pkgutil.iter_modules(app.models.__path__):
     importlib.import_module(f"app.models.{module_name}")
@@ -37,6 +36,7 @@ target_metadata = SQLModel.metadata
 
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.db_url)
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -76,9 +76,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

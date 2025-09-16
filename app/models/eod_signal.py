@@ -46,7 +46,6 @@ class EODSignalBase(BaseModel, table=False):  # type: ignore[call-arg]
 
 
 class EODSignal(EODSignalBase, table=True):  # type: ignore[call-arg]
-
     __tablename__ = "eod_signal"
 
     id: int = Field(default=None, primary_key=True)

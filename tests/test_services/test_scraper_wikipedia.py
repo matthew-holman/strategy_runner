@@ -19,7 +19,6 @@ def test_parse_constituents_html_snapshot():
 
 @pytest.mark.skip(reason="For debugging not for test suite runs")
 def test_fetch_wikipedia_html_live():
-
     html = _fetch_html(WIKI_URL)
     records = extract_constituents(html)
 

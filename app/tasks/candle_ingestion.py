@@ -36,7 +36,6 @@ def daily_candle_fetch():
         today = date.today()
 
         for index_constituent in index_constituents:
-
             from_date = (
                 ohlcv_handler.get_latest_candle_date(index_constituent.security.id)
                 or yesterday()
@@ -78,7 +77,6 @@ def heal_missing_candle_data() -> None:
 
         for security in all_securities:
             try:
-
                 if security.exchange is None or security.first_trade_date is None:
                     Log.warning(f"skipping {security.symbol} missing metadata.")
                     continue

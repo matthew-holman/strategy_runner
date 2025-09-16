@@ -17,7 +17,6 @@ from app.utils import Log
 
 
 def get_app():
-
     settings = get_settings()
 
     trading_bot_api = FastAPI(

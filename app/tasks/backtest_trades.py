@@ -53,7 +53,6 @@ def generate_trades_for_signals(
         for chunk_start, chunk_end in chunk_date_range(
             oldest_snapshot_date, today().date(), timedelta(days=365)
         ):
-
             signals = EODSignalHandler(
                 db_session
             ).get_validated_by_strategy_between_dates(

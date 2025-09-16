@@ -3,13 +3,29 @@ from typing import List, Optional, Sequence
 
 from sqlmodel import Session, or_, select
 
-from app.models.security import Security
+from app.core.db import upsert
+from app.models.security import Region, Security
 from app.models.stock_index_constituent import StockIndexConstituent
+
+UNIQUE_CONSTRAINT = "uq_security_symbol"
 
 
 @dataclass
 class SecurityHandler:
     db_session: Session
+
+    def save_all(self, rows: list[Security]) -> None:
+        if not rows:
+            return
+
+        upsert(
+            model=Security,
+            db_session=self.db_session,
+            data_iter=rows,
+            constraint=UNIQUE_CONSTRAINT,
+            exclude_columns={"id", "created_at", "updated_at"},
+        )
+        self.db_session.flush()
 
     def get_or_create(self, record: dict) -> Security:
         stmt = select(Security).where(Security.symbol == record["symbol"])
@@ -24,6 +40,14 @@ class SecurityHandler:
 
     def get_all(self) -> Sequence[Security]:
         stmt = select(Security)
+        return self.db_session.exec(stmt).all()
+
+    def get_all_for_region(self, region: Region) -> Sequence[Security]:
+        stmt = select(Security).where(Security.region == region)
+        return self.db_session.exec(stmt).all()
+
+    def get_all_symbols_for_region(self, region: Region) -> Sequence[Security]:
+        stmt = select(Security.symbol).where(Security.region == region)
         return self.db_session.exec(stmt).all()
 
     def get_by_id(self, security_id: int) -> Optional[Security]:

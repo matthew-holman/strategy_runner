@@ -46,7 +46,6 @@ def validate_historic_signals_for_strategy_at_open(
         for _chunk_start, chunk_end in chunk_date_range(
             oldest_signal_date, today().date(), timedelta(days=1)
         ):
-
             signals = EODSignalHandler(db_session).get_unvalidated_by_date_and_strategy(
                 chunk_end, signal_strategy.strategy_id
             )

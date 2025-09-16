@@ -70,7 +70,6 @@ class BacktestTradeBase(BaseModel, table=false()):  # type: ignore[call-arg]
 
 
 class BacktestTrade(BacktestTradeBase, table=True):  # type: ignore[call-arg]
-
     __tablename__ = "backtest_trade"
 
     id: int | None = Field(default=None, primary_key=True)

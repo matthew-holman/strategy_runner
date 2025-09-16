@@ -9,7 +9,6 @@ from app.models.base_model import BaseModel
 
 
 class StockIndexSnapshot(BaseModel, table=True):  # type: ignore[call-arg]
-
     __tablename__ = "stock_index_snapshot"
 
     id: Optional[int] = Field(default=None, primary_key=True)

@@ -9,7 +9,6 @@ from app.tasks.validate_at_open import (
 
 @pytest.fixture
 def mock_config_sma_pullback() -> SignalStrategy:
-
     return SignalStrategy(
         strategy_id="sma_pullback_buy",
         name="SMA PB",

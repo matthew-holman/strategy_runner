@@ -72,7 +72,6 @@ class TechnicalIndicatorBase(BaseModel, table=False):  # type: ignore[call-arg]
 
 
 class TechnicalIndicator(TechnicalIndicatorBase, table=True):  # type: ignore[call-arg]
-
     __tablename__ = "technical_indicator"
 
 

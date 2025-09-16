@@ -9,7 +9,7 @@ from app.tasks.indicator_computation import (
     compute_daily_indicators_for_all_securities,
     heal_missing_technical_indicators,
 )
-from app.tasks.sp500_ingestion import daily_sp500_sync
+from app.tasks.ticker_ingestion import region_security_sync
 from app.tasks.update_securities import check_for_missing_metadata
 from app.utils.datetime_utils import yesterday_was_a_weekend
 from app.utils.log_setup import configure_logging
@@ -25,32 +25,32 @@ def main() -> int:
             Log.info("Yesterday was a weekend; no data to pull.")
             return 0
 
-        Log.info("Checking S&P 500 constituents (daily_sp500_sync)...")
-        has_sp500_changed = daily_sp500_sync()
+        Log.info("Updating tickers, checking for the largest 2000 securities.")
+        new_tickers_added = region_security_sync()
 
-        if has_sp500_changed:
+        if new_tickers_added:
             Log.info("Updating security metadata.")
             check_for_missing_metadata()
         else:
-            Log.info("No S&P 500 changes; skipping metadata fetch.")
+            Log.info("No ticker changes; skipping metadata fetch.")
 
         Log.info("Fetching daily OHLCV data...")
         daily_candle_fetch()
 
-        if has_sp500_changed:
+        if new_tickers_added:
             Log.info("Healing OHLCV gaps (historical backfill).")
             heal_missing_candle_data()
         else:
-            Log.info("No S&P 500 changes; skipping OHLCV backfill.")
+            Log.info("No ticker changes; skipping OHLCV backfill.")
 
         Log.info("Computing indicators on pulled daily OHLCV data...")
         compute_daily_indicators_for_all_securities()
 
-        if has_sp500_changed:
+        if new_tickers_added:
             Log.info("Healing indicator gaps (historical backfill).")
             heal_missing_technical_indicators()
         else:
-            Log.info("No S&P 500 changes; skipping indicator backfill.")
+            Log.info("No ticker changes; skipping indicator backfill.")
 
         Log.info("Generating daily signals...")
         generate_daily_signals()

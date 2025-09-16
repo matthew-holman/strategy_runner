@@ -96,13 +96,11 @@ def heal_missing_technical_indicators() -> None:
         all_securities = security_handler.get_all()
 
         for security in all_securities:
-
             if security.exchange is None or security.first_trade_date is None:
                 Log.warning(f"skipping {security.symbol} missing metadata.")
                 continue
 
             try:
-
                 period_start = (
                     oldest_snapshot_date
                     if oldest_snapshot_date > security.first_trade_date

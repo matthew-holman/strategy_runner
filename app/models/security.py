@@ -1,9 +1,15 @@
 from datetime import date
+from enum import Enum
 from typing import Optional
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from app.models.base_model import BaseModel
+
+
+class Region(str, Enum):
+    US = "us"
 
 
 class SecurityBase(BaseModel, table=False):  # type: ignore[call-arg]
@@ -28,14 +34,15 @@ class SecurityBase(BaseModel, table=False):  # type: ignore[call-arg]
         None  # Based on yahoo ticker.info() firstTradeDateMilliseconds
     )
     exchange: Optional[str] = None  # Based on yahoo ticker.info()`fullExchangeName`
+    region: str = Region.US
 
 
 class Security(SecurityBase, table=True):  # type: ignore[call-arg]
-
     id: int = Field(default=None, primary_key=True)
     constituents: list["StockIndexConstituent"] = Relationship(  # type: ignore[name-defined]  # noqa: F821
         back_populates="security"
     )
+    __table_args__ = (UniqueConstraint("symbol", name="uq_security_symbol"),)
 
 
 class SecurityCreate(SecurityBase):  # type: ignore[call-arg]
