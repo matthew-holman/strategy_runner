@@ -1,5 +1,34 @@
-# Stock Picker bot
+# Stock Picker Bot
 
+A Python-based experiment in building an automated trading research system.  Both to hep me understand how markets and trading work,
+but also seeing how quickly I could pull something together with limited time and an AI junior dev.
+The project focuses on **data ingestion, signal generation, and simplified backtesting** to explore swing trading strategies.
+
+I'm not actively working on this at the moment, but I might come back to this and create a watchlist abstraction to test setups on.
+
+---
+
+## Project Overview
+
+- **Purpose**
+  The bot was designed to fetch historical and live market data, store it in a structured database, and generate trading signals based on technical analysis. It supports backtesting strategies and could be extended into live execution.
+
+- **Architecture**
+  - **FastAPI backend** for serving data and signals
+  - **PostgreSQL database** (via Docker) for storing securities, index constituents, OHLCV candles, and backtest results
+  - **SQLModel ORM** for clean data models and migrations
+  - **Task modules** for ingestion, backfilling, and computation of indicators
+  - **Services** wrapping external libraries (e.g. `yfinance`) for data access
+  - **Makefile + Poetry** for dependency management and developer workflows
+
+- **Features Implemented**
+  - Tracking historical S&P 500 constituents
+  - Fetching OHLCV data with backfill and daily update tasks
+  - Computing technical indicators
+  - Running backtests with configurable execution and exit strategies
+  - Code quality enforcement with `black`, `isort`, and `flake8`
+
+---
 ## Development Guide
 
 ###  Project Setup
