@@ -55,9 +55,8 @@ def main() -> int:
         Log.info("Generating daily signals...")
         generate_daily_signals()
 
-    except Exception:
-        # Captures full traceback
-        Log.exception("End of day tasks failed.")
+    except Exception as e:
+        Log.critical(f"EOD tasks failed with exception: {e}")
         return 1
 
     Log.info("All end of day tasks completed successfully.")

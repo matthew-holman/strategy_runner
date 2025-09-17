@@ -6,6 +6,8 @@ from app.models.backtest_run import BacktestRun
 from app.stratagies.execution_strategies import EXECUTION_STRATEGY_PROVIDER
 from app.stratagies.signal_strategies import SIGNAL_STRATEGY_PROVIDER
 from app.tasks.backtest_trades import generate_trades_for_signals
+from app.tasks.generate_signals import generate_historic_signals_for_strategy
+from app.tasks.validate_at_open import validate_historic_signals_for_strategy_at_open
 from app.utils import Log
 from app.utils.log_setup import configure_logging
 
@@ -17,8 +19,9 @@ def main() -> int:
             Log.info(f"Generating historic signals for strategy {signal_strategy.name}")
 
             backtest_run = BacktestRun(strategy_id=signal_strategy.strategy_id)
-            # generate_historic_signals_for_strategy(signal_strategy)
-            # validate_historic_signals_for_strategy_at_open(signal_strategy)
+            generate_historic_signals_for_strategy(signal_strategy)
+            validate_historic_signals_for_strategy_at_open(signal_strategy)
+
             for execution_strategy in EXECUTION_STRATEGY_PROVIDER.iter_strategies():
                 if execution_strategy.active:
                     Log.info(
@@ -29,16 +32,18 @@ def main() -> int:
                         signal_strategy, execution_strategy, backtest_run.run_id
                     )
                 else:
-                    # skipping inactive execution strategy
+                    Log.info(
+                        f"skipping inactive execution strategy {execution_strategy}."
+                    )
                     continue
 
             with next(get_db()) as db_session:
                 BacktestRunHandler(db_session).save(backtest_run)
                 db_session.commit()
 
-    except Exception:
+    except Exception as e:
         # Captures full traceback
-        Log.exception("Backtesting failed failed.")
+        Log.critical(f"Backtesting failed with exception: {e}")
         return 1
 
     Log.info("Backtest run completed successfully.")

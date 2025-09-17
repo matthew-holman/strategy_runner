@@ -16,9 +16,7 @@ def main():
             Log.info("Today is a weekend, exchanges are closed.")
         else:
             for signal_strategy in SIGNAL_STRATEGY_PROVIDER.iter_strategies():
-                Log.info(
-                    f"Generating historic signals for strategy {signal_strategy.name}"
-                )
+                Log.info(f"Validating eod signals for strategy {signal_strategy.name}.")
                 validate_signals_from_previous_trading_day(signal_strategy)
     except Exception as e:
         Log.critical(f"Daily tasks failed with exception: {e}")
