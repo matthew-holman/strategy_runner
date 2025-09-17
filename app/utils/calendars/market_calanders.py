@@ -74,13 +74,11 @@ class MarketCalendarBase(TradingCalendar):
                 if len(before) >= required_days:
                     return before[-required_days]
 
-            # Not enough days collected; expand window and try again
+            # Not enough days collected; expand and try again
             horizon *= 2
 
 
 # ---------- Subclasses ----------
-
-
 class CfeCalendar(MarketCalendarBase):
     index_name = "CFE"
 

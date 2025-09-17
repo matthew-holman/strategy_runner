@@ -15,7 +15,7 @@ class UnsupportedExchangeError(Exception):
 # Calendar strategy registry
 _CALENDAR_REGISTRY: Dict[str, TradingCalendar] = {
     "NYSE": NyseCalendar(),
-    "NASDAQGS": NyseCalendar(),  # in pandas_market_calendars NASDAQ calendars are a alias of the NYSE cal
+    "NASDAQGS": NyseCalendar(),  # in pandas_market_calendars NASDAQ calendars are an alias of the NYSE cal
     "NASDAQGM": NyseCalendar(),
     "NASDAQCM": NyseCalendar(),
     "NYSEARCA": NyseCalendar(),

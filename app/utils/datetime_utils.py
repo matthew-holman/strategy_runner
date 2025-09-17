@@ -28,11 +28,11 @@ def chunk_date_range(
     - Each chunk_end is inclusive of the range upper bound.
     """
     if start == end:
-        yield (start, end)
+        yield start, end
         return
 
     cursor = start
     while cursor < end:
         chunk_end = min(cursor + chunk_size, end)
-        yield (cursor, chunk_end)
+        yield cursor, chunk_end
         cursor = chunk_end
