@@ -1,14 +1,14 @@
 from datetime import date
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, Query
-from handlers.eod_signal import EODSignalHandler
 from sqlalchemy.orm import Session
 from starlette import status
-from utils import Log
 
 from app.core.db import get_db
+from app.handlers.eod_signal import EODSignalHandler
 from app.models.eod_signal import EODSignalRead
+from app.utils import Log
 
 INTERFACE = "signals"
 
@@ -26,8 +26,8 @@ router = APIRouter(
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=List[EODSignalRead])
 def list_signals(
-    from_date: Optional[date] = Query(None, alias="from"),
-    to_date: Optional[date] = Query(None, alias="to"),
+    from_date: date = Query(None, alias="from", default=date.today()),
+    to_date: date = Query(None, alias="to", default=date.today()),
     db_session: Session = Depends(get_db),
 ):
     signals = EODSignalHandler(db_session).get_all_strategy_between_dates(

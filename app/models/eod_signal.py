@@ -69,7 +69,7 @@ class EODSignal(EODSignalBase, table=True):  # type: ignore[call-arg]
     )
 
 
-class EODSignalRead(EODSignalBase, table=False):  # type: ignore[call-arg]
+class EODSignalRead(EODSignalBase):  # type: ignore[call-arg]
     id: int
 
     class Config:

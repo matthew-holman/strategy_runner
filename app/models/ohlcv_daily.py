@@ -47,3 +47,6 @@ class OHLCVDailyCreate(OHLCVDailyBase):  # type: ignore[call-arg]
 
 class OHLCVDailyRead(OHLCVDailyBase):  # type: ignore[call-arg]
     id: int
+
+    class Config:
+        from_attributes = True
