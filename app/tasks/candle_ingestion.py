@@ -15,7 +15,7 @@ from app.models.ohlcv_daily import OHLCVDailyCreate
 from app.models.security import Security
 from app.models.stock_index_constituent import SP500
 from app.services.market_data_service import OHLCV, MarketDataService
-from app.utils.datetime_utils import chunk_date_range, yesterday
+from app.utils.datetime_utils import chunk_date_range, last_year, yesterday
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import (
     get_all_trading_days_between,
@@ -67,11 +67,7 @@ def heal_missing_candle_data() -> None:
     Identify and backfill missing OHLCV data per security by comparing against expected trading days.
     """
     with next(get_db()) as db_session:
-        ic_handler = StockIndexConstituentHandler(db_session)
         security_handler = SecurityHandler(db_session)
-
-        # Get the oldest valid backfill window
-        oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
 
         all_securities = security_handler.get_all()
 
@@ -83,7 +79,7 @@ def heal_missing_candle_data() -> None:
 
                 oldest_required_candle_date = get_nth_trading_day(
                     exchange=security.exchange,
-                    as_of=oldest_snapshot_date,
+                    as_of=last_year(),
                     offset=-abs(TRADING_DAYS_REQUIRED),
                 )
 

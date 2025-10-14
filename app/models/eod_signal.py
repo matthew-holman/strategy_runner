@@ -67,3 +67,10 @@ class EODSignal(EODSignalBase, table=True):  # type: ignore[call-arg]
         ),
         {"extend_existing": True},
     )
+
+
+class EODSignalRead(EODSignalBase, table=False):  # type: ignore[call-arg]
+    id: int
+
+    class Config:
+        from_attributes = True

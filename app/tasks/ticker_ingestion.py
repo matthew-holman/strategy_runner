@@ -6,7 +6,7 @@ from app.models.security import Region, Security
 from app.services.market_data_service import MarketDataService
 from app.utils.log_wrapper import Log
 
-DEFAULT_TICKER_LIMIT = 2000
+DEFAULT_TICKER_LIMIT = 3000
 BATCH_COMMIT_SIZE = 500
 
 

@@ -13,7 +13,7 @@ from app.indicators.compute import compute_indicators_for_range
 from app.indicators.exceptions import InsufficientOHLCVDataError
 from app.models.stock_index_constituent import SP500
 from app.models.technical_indicator import TechnicalIndicator
-from app.utils.datetime_utils import yesterday
+from app.utils.datetime_utils import last_year, yesterday
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import (
     get_all_trading_days_between,
@@ -87,12 +87,8 @@ def compute_daily_indicators_for_all_securities(
 
 def heal_missing_technical_indicators() -> None:
     with next(get_db()) as db_session:
-        ic_handler = StockIndexConstituentHandler(db_session)
         security_handler = SecurityHandler(db_session)
         technical_indicator_handler = TechnicalIndicatorHandler(db_session)
-
-        oldest_snapshot_date = ic_handler.get_earliest_snapshot(SP500).snapshot_date
-
         all_securities = security_handler.get_all()
 
         for security in all_securities:
@@ -101,16 +97,10 @@ def heal_missing_technical_indicators() -> None:
                 continue
 
             try:
-                period_start = (
-                    oldest_snapshot_date
-                    if oldest_snapshot_date > security.first_trade_date
-                    else security.first_trade_date
-                )
-
                 trading_days = set(
                     get_all_trading_days_between(
                         exchange=security.exchange,
-                        start=period_start,
+                        start=last_year(),
                         end=yesterday(),
                     )
                 )

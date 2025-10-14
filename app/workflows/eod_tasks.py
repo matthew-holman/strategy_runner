@@ -25,7 +25,7 @@ def main() -> int:
             Log.info("Yesterday was a weekend; no data to pull.")
             return 0
 
-        Log.info("Updating tickers, checking for the largest 2000 securities.")
+        Log.info("Updating tickers, checking for the largest 3000 securities.")
         new_tickers_added = region_security_sync()
 
         if new_tickers_added:

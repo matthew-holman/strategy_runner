@@ -13,19 +13,22 @@ from starlette.responses import JSONResponse, RedirectResponse
 from utils.log_setup import configure_logging
 
 from app.core.settings import get_settings
+from app.routers.eod_signals import router as signals
 from app.utils import Log
 
 
 def get_app():
-    settings = get_settings()
+    configure_logging(logger_name="stock_picker-api", level=logging.INFO, use_utc=False)
 
-    trading_bot_api = FastAPI(
-        title="Fast API template",
-        description="template for FastApi app",
-        version=f"{settings.API_VERSION}-{settings.IMAGE_TAG}",
+    app_settings = get_settings()
+
+    stock_picker_api = FastAPI(
+        title="Stock Picker api",
+        description="api for stock picker results",
+        version=f"{app_settings.API_VERSION}-{app_settings.IMAGE_TAG}",
     )
 
-    trading_bot_api.add_middleware(
+    stock_picker_api.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
@@ -33,12 +36,14 @@ def get_app():
         allow_headers=["*"],
     )
 
-    @trading_bot_api.exception_handler(HTTPException)
+    stock_picker_api.include_router(signals)
+
+    @stock_picker_api.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
         Log.error(str(exc.detail))
-        return JSONResponse(str(exc.detail), status_code=exc.status_code)
+        return JSONResponse({"detail": str(exc.detail)}, status_code=exc.status_code)
 
-    @trading_bot_api.exception_handler(RequestValidationError)
+    @stock_picker_api.exception_handler(RequestValidationError)
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
     ):
@@ -55,7 +60,7 @@ def get_app():
 
         return await request_validation_exception_handler(request, exc)
 
-    @trading_bot_api.exception_handler(ValueError)
+    @stock_picker_api.exception_handler(ValueError)
     async def value_error_exception_handler(request: Request, exc: ValueError):
         error_detail = jsonable_encoder(exc)
 
@@ -69,9 +74,9 @@ def get_app():
         )
 
         Log.error(str(exc))
-        return JSONResponse(str(exc), status_code=400)
+        return JSONResponse({"detail": str(exc)}, status_code=400)
 
-    return trading_bot_api
+    return stock_picker_api
 
 
 application = get_app()
@@ -83,7 +88,6 @@ async def docs_redirect():
 
 
 if __name__ == "__main__":
-    configure_logging(logger_name="rest-api", level=logging.INFO, use_utc=False)
     settings = get_settings()
 
     uvicorn.run(

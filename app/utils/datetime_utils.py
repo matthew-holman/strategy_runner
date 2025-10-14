@@ -18,6 +18,10 @@ def yesterday() -> date:
     return date.today() - timedelta(days=1)
 
 
+def last_year() -> date:
+    return date.today() - timedelta(days=356)
+
+
 def chunk_date_range(
     start: date, end: date, chunk_size: timedelta
 ) -> Iterator[tuple[date, date]]:
