@@ -26,8 +26,8 @@ router = APIRouter(
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=List[EODSignalRead])
 def list_signals(
-    from_date: date = Query(None, alias="from", default=date.today()),
-    to_date: date = Query(None, alias="to", default=date.today()),
+    from_date: date = Query(default=date.today(), alias="from"),
+    to_date: date = Query(default=date.today(), alias="to"),
     db_session: Session = Depends(get_db),
 ):
     signals = EODSignalHandler(db_session).get_all_strategy_between_dates(

@@ -52,5 +52,8 @@ class SecurityCreate(SecurityBase):  # type: ignore[call-arg]
 class SecurityRead(SecurityBase):  # type: ignore[call-arg]
     id: int
 
+    class Config:
+        from_attributes = True
+
 
 Security.model_rebuild()

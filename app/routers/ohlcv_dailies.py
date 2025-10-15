@@ -30,8 +30,8 @@ router = APIRouter(
 )
 def list_candles(
     security_id: int,
-    from_date: date = Query(None, alias="from", default=date.today()),
-    to_date: date = Query(None, alias="to", default=date.today()),
+    from_date: date = Query(default=date.today(), alias="from"),
+    to_date: date = Query(default=date.today(), alias="to"),
     db_session: Session = Depends(get_db),
 ):
     candles = OHLCVDailyHandler(db_session).get_period_for_security(
