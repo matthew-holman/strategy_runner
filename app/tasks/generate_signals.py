@@ -71,9 +71,10 @@ def run_signal_picker(generation_date: date, signal_strategy: SignalStrategy):
 
 def generate_daily_signals():
     for cfg in SIGNAL_STRATEGY_PROVIDER.iter_strategies():
-        Log.info(f"Generating signals using strategy {cfg.name}")
-        # Run the signal picker for yesterday's trading
-        run_signal_picker(generation_date=yesterday(), signal_strategy=cfg)
+        if cfg.active:
+            Log.info(f"Generating signals using strategy {cfg.name}")
+            # Run the signal picker for yesterday's trading
+            run_signal_picker(generation_date=yesterday(), signal_strategy=cfg)
 
 
 def _map_ranked_df_to_eod_signals(

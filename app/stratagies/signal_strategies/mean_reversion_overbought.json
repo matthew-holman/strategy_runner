@@ -1,0 +1,50 @@
+{
+  "active": true,
+  "strategy_id": "mean_reversion_overbought",
+  "name": "Mean Reversion – Overbought Fade",
+  "signal_filters": [
+    {
+      "indicator": "rsi_14",
+      "comparison": ">",
+      "value": 70,
+      "note": "Overbought on RSI"
+    },
+    {
+      "indicator": "close",
+      "comparison": ">",
+      "value": 1.05,
+      "comparison_field": "sma_20",
+      "note": "More than 5% above short-term trend"
+    },
+    {
+      "indicator": "atr_14",
+      "comparison": ">",
+      "value": 0.04,
+      "comparison_field": "close",
+      "note": "High volatility (>4% of price)"
+    },
+    {
+      "indicator": "volume",
+      "comparison": ">",
+      "value": 1.5,
+      "comparison_field": "avg_vol_20d",
+      "note": "Active volume"
+    }
+  ],
+  "validate_at_open_filters": [],
+  "ranking": [
+    {
+      "indicator": "rsi_14",
+      "function": "gaussian",
+      "center": 80,
+      "sigma": 5,
+      "weight": 0.6
+    },
+    {
+      "indicator": "atr_14",
+      "function": "linear",
+      "weight": 0.4
+    }
+  ],
+  "max_signals_per_day": 5
+}

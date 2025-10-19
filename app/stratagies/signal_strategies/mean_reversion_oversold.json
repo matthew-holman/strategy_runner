@@ -1,0 +1,50 @@
+{
+  "active": true,
+  "strategy_id": "mean_reversion_oversold",
+  "name": "Mean Reversion – Oversold Recovery",
+  "signal_filters": [
+    {
+      "indicator": "rsi_14",
+      "comparison": "<",
+      "value": 35,
+      "note": "Short-term oversold"
+    },
+    {
+      "indicator": "close",
+      "comparison": ">",
+      "value": 0.97,
+      "comparison_field": "sma_200",
+      "note": "Above 97% of SMA200 (still near long-term support)"
+    },
+    {
+      "indicator": "close",
+      "comparison": "<",
+      "value": 1.03,
+      "comparison_field": "sma_200",
+      "note": "Below 103% of SMA200 (not extended from support)"
+    },
+    {
+      "indicator": "volume",
+      "comparison": ">",
+      "value": 1.5,
+      "comparison_field": "avg_vol_20d",
+      "note": "Active trading volume"
+    }
+  ],
+  "validate_at_open_filters": [],
+  "ranking": [
+    {
+      "indicator": "rsi_14",
+      "function": "gaussian",
+      "center": 25,
+      "sigma": 5,
+      "weight": 0.7
+    },
+    {
+      "indicator": "atr_14",
+      "function": "linear",
+      "weight": 0.3
+    }
+  ],
+  "max_signals_per_day": 5
+}

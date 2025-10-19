@@ -1,0 +1,72 @@
+{
+  "active": true,
+  "strategy_id": "momentum_strength",
+  "name": "Momentum Strength – Sustained Uptrend with Volume Confirmation",
+  "signal_filters": [
+    {
+      "indicator": "close",
+      "comparison": ">",
+      "comparison_field": "sma_50",
+      "value": 1.0,
+      "note": "Above mid-term trend (SMA50)"
+    },
+    {
+      "indicator": "sma_50",
+      "comparison": ">",
+      "comparison_field": "sma_200",
+      "value": 1.0,
+      "note": "Uptrend confirmation (SMA50 > SMA200)"
+    },
+    {
+      "indicator": "close",
+      "comparison": ">",
+      "comparison_field": "sma_20",
+      "value": 1.02,
+      "note": "Close at least 2% above short-term average"
+    },
+    {
+      "indicator": "volume",
+      "comparison": ">",
+      "comparison_field": "avg_vol_20d",
+      "value": 1.5,
+      "note": "Volume ≥ 1.5× 20-day average"
+    },
+    {
+      "indicator": "rsi_14",
+      "comparison": ">",
+      "value": 55,
+      "note": "Momentum confirmation (RSI > 55)"
+    }
+  ],
+  "validate_at_open_filters": [
+    {
+      "indicator": "next_open",
+      "comparison": ">",
+      "comparison_field": "close",
+      "value": 0.995,
+      "note": "Avoid heavy gap-down at open"
+    }
+  ],
+  "ranking": [
+    {
+      "indicator": "rsi_14",
+      "function": "gaussian",
+      "center": 60,
+      "sigma": 10,
+      "weight": 0.4
+    },
+    {
+      "indicator": "volume",
+      "function": "log_ratio",
+      "denominator": "avg_vol_20d",
+      "weight": 0.3,
+      "max": 5
+    },
+    {
+      "indicator": "atr_14",
+      "function": "linear",
+      "weight": 0.3
+    }
+  ],
+  "max_signals_per_day": 5
+}

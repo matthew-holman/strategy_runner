@@ -1,17 +1,26 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import List
+from typing import Any, Dict, List, Optional
 
-from models.ohlcv_daily import OHLCVDaily
 from sqlmodel import Session, select
 
 from app.core.db import upsert
+from app.models.ohlcv_daily import OHLCVDaily
 from app.models.technical_indicator import CombinedSignalRow, TechnicalIndicator
 
 
 @dataclass
 class TechnicalIndicatorHandler:
     db_session: Session
+
+    @staticmethod
+    def get_indicator_columns() -> List[str]:
+        """Return all valid indicator column names (excluding PKs and FKs)."""
+        return [
+            c.name
+            for c in TechnicalIndicator.__table__.columns
+            if c.name not in {"security_id", "measurement_date"}
+        ]
 
     def save_all(self, technical_indicators: List[TechnicalIndicator]) -> None:
         if not technical_indicators:
@@ -76,3 +85,50 @@ class TechnicalIndicatorHandler:
             )
             for ohlcv, ti in results
         ]
+
+    def get_selected_fields_for_security_between_dates(
+        self,
+        security_id: int,
+        from_date: Optional[date] = None,
+        to_date: Optional[date] = None,
+        fields: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Fetch selected technical indicators for a security within an optional date range."""
+
+        # Discover available indicator columns dynamically
+        available_columns = self.get_indicator_columns()
+
+        # Validate and normalize fields
+        if not fields:
+            fields = available_columns
+        else:
+            invalid = [f for f in fields if f not in available_columns]
+            if invalid:
+                raise ValueError(f"Invalid indicator fields: {invalid}")
+
+        # Build SQLAlchemy select query
+        selected_columns = [TechnicalIndicator.measurement_date]
+        selected_columns += [getattr(TechnicalIndicator, f) for f in fields]
+
+        stmt = (
+            select(*selected_columns)
+            .where(TechnicalIndicator.security_id == security_id)
+            .order_by(TechnicalIndicator.measurement_date)
+        )
+
+        if from_date:
+            stmt = stmt.where(TechnicalIndicator.measurement_date >= from_date)
+        if to_date:
+            stmt = stmt.where(TechnicalIndicator.measurement_date <= to_date)
+
+        rows = self.db_session.exec(stmt).all()
+
+        # Convert SQLAlchemy rows to plain dicts
+        results = []
+        for row in rows:
+            record = {"measurement_date": row[0]}
+            for i, field_name in enumerate(fields, start=1):
+                record[field_name] = row[i]
+            results.append(record)
+
+        return results

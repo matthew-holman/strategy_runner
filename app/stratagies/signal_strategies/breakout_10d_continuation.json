@@ -1,4 +1,5 @@
 {
+  "active": true,
   "strategy_id": "breakout_10d_continuation",
   "name": "Breakout of 10d High with Trend + Volume",
   "signal_filters": [

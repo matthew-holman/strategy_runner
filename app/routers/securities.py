@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -20,12 +22,20 @@ router = APIRouter(
 )
 
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=list[SecurityRead])
-def list_securities(db_session: Session = Depends(get_db)):
-    securities = SecurityHandler(db_session).get_all()
-    if not securities:
-        Log.info("No securities found")
-        return []
+@router.get("/", status_code=status.HTTP_200_OK, response_model=List[SecurityRead])
+def list_securities(
+    ids: Optional[List[int]] = Query(default=None, alias="ids"),
+    db_session: Session = Depends(get_db),
+):
+    handler = SecurityHandler(db_session)
+
+    if ids:
+        securities = handler.get_by_ids(ids)
+        Log.info(f"Fetched {len(securities)} securities for IDs {ids}")
+        return securities
+
+    securities = handler.get_all()
+    Log.info(f"Fetched {len(securities)} total securities")
     return securities
 
 

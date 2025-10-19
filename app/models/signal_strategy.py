@@ -58,6 +58,7 @@ class RankingFormula(BaseModel):
 
 
 class SignalStrategy(BaseModel):
+    active: bool = False
     strategy_id: str
     name: str
     signal_filters: List[FilterRule]

@@ -57,7 +57,7 @@ class SecurityHandler:
             return security
         return None
 
-    def get_by_ids(self, security_ids: List[int]) -> List[Security]:
+    def get_by_ids(self, security_ids: List[int]) -> Sequence[Security]:
         stmt = select(Security).where(Security.id.in_(security_ids))  # type: ignore[attr-defined]
         return self.db_session.exec(stmt).all()
 

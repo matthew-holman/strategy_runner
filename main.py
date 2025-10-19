@@ -13,7 +13,9 @@ from starlette.responses import JSONResponse, RedirectResponse
 
 from app.core.settings import get_settings
 from app.routers.eod_signals import router as signals
+from app.routers.indicators import router as indicators
 from app.routers.ohlcv_dailies import router as ohlcv_dailies
+from app.routers.securities import router as securities
 from app.utils import Log
 from app.utils.log_setup import configure_logging
 
@@ -37,7 +39,9 @@ def get_app():
         allow_headers=["*"],
     )
 
+    stock_picker_api.include_router(indicators)
     stock_picker_api.include_router(ohlcv_dailies)
+    stock_picker_api.include_router(securities)
     stock_picker_api.include_router(signals)
 
     @stock_picker_api.exception_handler(HTTPException)

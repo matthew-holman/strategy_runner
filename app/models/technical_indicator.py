@@ -75,6 +75,13 @@ class TechnicalIndicator(TechnicalIndicatorBase, table=True):  # type: ignore[ca
     __tablename__ = "technical_indicator"
 
 
+class TechnicalIndicatorRead(TechnicalIndicatorBase):  # type: ignore[call-arg]
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
 class StockIndexConstituentRead(TechnicalIndicatorBase):  # type: ignore[call-arg]
     pass
 

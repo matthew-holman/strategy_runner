@@ -9,11 +9,11 @@ from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.models.ohlcv_daily import OHLCVDailyRead
 from app.utils import Log
 
-INTERFACE = "ohlcv_daylies"
+INTERFACE = "ohlcv_dailies"
 
 router = APIRouter(
     prefix=f"/{INTERFACE}",
-    tags=[INTERFACE.upper()],
+    tags=[INTERFACE.capitalize()],
     responses={
         400: {"detail": "Error details"},
         401: {"detail": "Access token was not provided"},
