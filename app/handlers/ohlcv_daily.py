@@ -43,10 +43,14 @@ class OHLCVDailyHandler:
     def get_period_for_security(
         self, start: date, end: date, security_id: int
     ) -> List[OHLCVDaily]:
-        stmt = select(OHLCVDaily).where(
-            OHLCVDaily.security_id == security_id,
-            OHLCVDaily.candle_date >= start,
-            OHLCVDaily.candle_date <= end,
+        stmt = (
+            select(OHLCVDaily)
+            .where(
+                OHLCVDaily.security_id == security_id,
+                OHLCVDaily.candle_date >= start,
+                OHLCVDaily.candle_date <= end,
+            )
+            .order_by(OHLCVDaily.candle_date)
         )
         return self.db_session.exec(stmt).all()
 
