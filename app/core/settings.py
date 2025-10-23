@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     BASE_URL: str = Field(default="0.0.0.0")
     PORT: int = Field(default=8000)
-    NUM_WORKERS: int = Field(default=2)
+    NUM_WORKERS: int = Field(default=0)
 
     API_VERSION: str = Field(default="0.1.0")
     IMAGE_TAG: str = Field(default="local-latest")

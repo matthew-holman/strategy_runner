@@ -7,11 +7,9 @@ import pandas as pd
 from handlers.security import SecurityHandler
 
 from app.core.db import get_db
-from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.indicators.compute import compute_indicators_for_range
 from app.indicators.exceptions import InsufficientOHLCVDataError
-from app.models.stock_index_constituent import SP500
 from app.models.technical_indicator import TechnicalIndicator
 from app.utils.datetime_utils import last_year, yesterday
 from app.utils.log_wrapper import Log
@@ -33,27 +31,10 @@ def compute_daily_indicators_for_all_securities(
 
     with next(get_db()) as db_session:
         technical_indicator_handler = TechnicalIndicatorHandler(db_session)
+        security_handler = SecurityHandler(db_session)
+        all_securities = security_handler.get_all()
 
-        stock_ic_handler = StockIndexConstituentHandler(db_session)
-        latest_sp500_snapshot = stock_ic_handler.get_most_recent_snapshot(SP500)
-
-        if latest_sp500_snapshot.id is None:
-            Log.warning("No snapshot found for S&P 500.")
-            return
-
-        index_constituents = stock_ic_handler.get_by_snapshot_id(
-            latest_sp500_snapshot.id
-        )
-
-        for index_constituent in index_constituents:
-            security = index_constituent.security
-
-            if security is None:
-                Log.warning(
-                    f"Constituent {index_constituent.id} has no linked security"
-                )
-                continue
-
+        for security in all_securities:
             try:
                 try:
                     df = compute_indicators_for_range(

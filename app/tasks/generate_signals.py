@@ -7,15 +7,13 @@ import pandas as pd
 from app.core.db import get_db
 from app.handlers.eod_signal import EODSignalHandler
 from app.handlers.security import SecurityHandler
-from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.models.eod_signal import EODSignal
 from app.models.signal_strategy import SignalStrategy
-from app.models.stock_index_constituent import SP500
 from app.signals.filters import apply_default_signal_filters, apply_signal_filters
 from app.signals.ranking import apply_strategy_ranking
 from app.stratagies.signal_strategies import SIGNAL_STRATEGY_PROVIDER
-from app.utils.datetime_utils import yesterday
+from app.utils.datetime_utils import last_year, yesterday
 from app.utils.log_wrapper import Log
 from app.utils.trading_calendar import get_all_trading_days_between
 
@@ -25,14 +23,9 @@ REQUIRED_COLS: Set[str] = {"security_id", "measurement_date", "ohlcv_daily_id", 
 
 def run_signal_picker(generation_date: date, signal_strategy: SignalStrategy):
     with next(get_db()) as db_session:
-        snapshot = StockIndexConstituentHandler(
-            db_session
-        ).get_relevant_snapshot_for_date(generation_date, SP500)
 
-        if snapshot is None or snapshot.id is None:
-            raise ValueError("Snapshot returned was empty")
-
-        tickers = SecurityHandler(db_session).get_by_snapshot_id(snapshot.id)
+        security_handler = SecurityHandler(db_session)
+        tickers = security_handler.get_all()
 
         indicator_data = TechnicalIndicatorHandler(
             db_session
@@ -125,21 +118,14 @@ def generate_historic_signals_for_all_strategies() -> None:
 def generate_historic_signals_for_strategy(signal_strategy: SignalStrategy) -> None:
     exchange = "NYSE"  # hardcoded for now, replace with exchange abstraction later.
 
-    with next(get_db()) as db_session:
-        oldest_snapshot_date = (
-            StockIndexConstituentHandler(db_session)
-            .get_earliest_snapshot(SP500)
-            .snapshot_date
-        )
+    trading_days = get_all_trading_days_between(
+        exchange=exchange,
+        start=last_year(),
+        end=yesterday(),
+    )
 
-        trading_days = get_all_trading_days_between(
-            exchange=exchange,
-            start=oldest_snapshot_date,
-            end=yesterday(),
+    for trading_day in trading_days:
+        Log.info(
+            f"generating historic signals for {trading_day} using {signal_strategy.name}"
         )
-
-        for trading_day in trading_days:
-            Log.info(
-                f"generating historic signals for {trading_day} using {signal_strategy.name}"
-            )
-            run_signal_picker(trading_day, signal_strategy)
+        run_signal_picker(trading_day, signal_strategy)

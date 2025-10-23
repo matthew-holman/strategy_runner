@@ -9,11 +9,9 @@ from sqlmodel import Session
 from app.core.db import get_db
 from app.handlers.ohlcv_daily import OHLCVDailyHandler
 from app.handlers.security import SecurityHandler
-from app.handlers.stock_index_constituent import StockIndexConstituentHandler
 from app.indicators.compute import TRADING_DAYS_REQUIRED
 from app.models.ohlcv_daily import OHLCVDailyCreate
 from app.models.security import Security
-from app.models.stock_index_constituent import SP500
 from app.services.market_data_service import OHLCV, MarketDataService
 from app.utils.datetime_utils import chunk_date_range, last_year, yesterday
 from app.utils.log_wrapper import Log
@@ -25,40 +23,29 @@ from app.utils.trading_calendar import (
 
 def daily_candle_fetch():
     with next(get_db()) as db_session:
-        stock_ic_handler = StockIndexConstituentHandler(db_session)
-        latest_sp500_snapshot = stock_ic_handler.get_most_recent_snapshot(SP500)
 
-        index_constituents = stock_ic_handler.get_by_snapshot_id(
-            latest_sp500_snapshot.id
-        )
-
+        security_handler = SecurityHandler(db_session)
+        all_securities = security_handler.get_all()
         ohlcv_handler = OHLCVDailyHandler(db_session)
         today = date.today()
 
-        for index_constituent in index_constituents:
-            from_date = (
-                ohlcv_handler.get_latest_candle_date(index_constituent.security.id)
-                or yesterday()
-            )
+        for security in all_securities:
+            from_date = ohlcv_handler.get_latest_candle_date(security.id) or yesterday()
             if from_date >= today:
-                Log.info(
-                    f"No new data to fetch for {index_constituent.security.symbol} — up to date."
-                )
+                Log.info(f"No new data to fetch for {security.symbol} — up to date.")
                 continue
 
             records = MarketDataService.fetch_ohlcv_history(
-                index_constituent.security.symbol, from_date, today
+                security.symbol, from_date, today
             )
 
             if records:
-                daily_candles = _map_ohlcv_objects(
-                    records, index_constituent.security.id
-                )
+                daily_candles = _map_ohlcv_objects(records, security.id)
                 ohlcv_handler.save_all(daily_candles)
                 db_session.commit()
                 Log.info(
                     f"Inserted {len(daily_candles)} daily OHLCV records for security "
-                    f"{index_constituent.security.company_name} from {from_date} to today"
+                    f"{security.company_name} from {from_date} to today"
                 )
 
 
@@ -183,8 +170,12 @@ def _fetch_and_store_ohlcv_for_security(
     ohlcv_handler = OHLCVDailyHandler(db_session)
 
     for chunk_start, chunk_end in chunk_date_range(start_date, end_date, chunk_size):
+
+        if chunk_start == chunk_end:
+            chunk_end += timedelta(days=1)
+
         Log.debug(f"Fetching {security.symbol} from {chunk_start} to {chunk_end}")
-        time.sleep(2)
+        time.sleep(1.5)
 
         records = MarketDataService.fetch_ohlcv_history(
             security.symbol, chunk_start, chunk_end

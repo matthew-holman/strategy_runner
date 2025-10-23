@@ -25,32 +25,28 @@ def main() -> int:
             Log.info("Yesterday was a weekend; no data to pull.")
             return 0
 
-        Log.info("Updating tickers, checking for the largest 3000 securities.")
+        Log.info("Updating tickers, checking for the largest securities.")
         new_tickers_added = region_security_sync()
-
+        new_tickers_added = True
         if new_tickers_added:
             Log.info("Updating security metadata.")
             check_for_missing_metadata()
         else:
             Log.info("No ticker changes; skipping metadata fetch.")
 
-        Log.info("Fetching daily OHLCV data...")
-        daily_candle_fetch()
-
         if new_tickers_added:
             Log.info("Healing OHLCV gaps (historical backfill).")
             heal_missing_candle_data()
         else:
-            Log.info("No ticker changes; skipping OHLCV backfill.")
-
-        Log.info("Computing indicators on pulled daily OHLCV data...")
-        compute_daily_indicators_for_all_securities()
+            Log.info("Fetching daily OHLCV data...")
+            daily_candle_fetch()
 
         if new_tickers_added:
             Log.info("Healing indicator gaps (historical backfill).")
             heal_missing_technical_indicators()
         else:
-            Log.info("No ticker changes; skipping indicator backfill.")
+            Log.info("Computing indicators on pulled daily OHLCV data...")
+            compute_daily_indicators_for_all_securities()
 
         Log.info("Generating daily signals...")
         generate_daily_signals()
