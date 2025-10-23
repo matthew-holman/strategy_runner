@@ -4,9 +4,8 @@ from typing import Optional
 
 import pandas as pd
 
-from handlers.security import SecurityHandler
-
 from app.core.db import get_db
+from app.handlers.security import SecurityHandler
 from app.handlers.technical_indicator import TechnicalIndicatorHandler
 from app.indicators.compute import compute_indicators_for_range
 from app.indicators.exceptions import InsufficientOHLCVDataError

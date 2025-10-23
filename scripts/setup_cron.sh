@@ -1,33 +1,32 @@
 #!/bin/bash
+set -e
 
-# Resolve the script directory (repo root assumed to be one level up from scripts/)
+# --- Resolve paths ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Determine VENV python path (assumes script is being run from an activated venv)
+RUN_SCRIPT="$SCRIPT_DIR/run_eod_tasks.sh"
+LOG_FILE="/var/log/trading_tasks.log"
+
+# --- Determine Python executable ---
 if [ -n "$VIRTUAL_ENV" ]; then
     PYTHON_EXEC="$VIRTUAL_ENV/bin/python"
 else
-    echo "This script should be run from within an activated virtual environment."
+    echo "❌ This script must be run from within an activated virtual environment."
     exit 1
 fi
 
-# Resolve the eod_tasks.py script path
-TASK_SCRIPT="$REPO_ROOT/app/workflows/eod_tasks.py"
-
-# Ensure the log directory exists
-LOG_FILE="/var/log/trading_tasks.log"
+# --- Ensure log file exists ---
 sudo touch "$LOG_FILE"
 sudo chown "$(whoami)" "$LOG_FILE"
 
-# Define the cron job
-CRON_JOB="0 6 * * * $PYTHON_EXEC $TASK_SCRIPT >> $LOG_FILE 2>&1"
+# --- Define cron job ---
+CRON_JOB="0 6 * * * $RUN_SCRIPT $PYTHON_EXEC >> $LOG_FILE 2>&1"
 
-# Check if the job already exists
-if crontab -l 2>/dev/null | grep -F "$TASK_SCRIPT" >/dev/null; then
-    echo "✅ Cron job already exists. Skipping..."
+# --- Add if missing ---
+if crontab -l 2>/dev/null | grep -F "$RUN_SCRIPT" >/dev/null; then
+    echo "✅ Cron job already exists for $RUN_SCRIPT"
 else
-    # Add the cron job
     (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
     echo "✅ Cron job added:"
     echo "$CRON_JOB"
