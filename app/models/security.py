@@ -23,7 +23,7 @@ class SecurityBase(BaseModel, table=False):  # type: ignore[call-arg]
     gics_sub_industry: str = Field(
         description="The GICS sub-industry classification within the sector"
     )
-    cik: str = Field(
+    cik: Optional[str] = Field(
         default=None,
         nullable=True,
         index=True,
