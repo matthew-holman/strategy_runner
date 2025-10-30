@@ -21,7 +21,7 @@ sudo touch "$LOG_FILE"
 sudo chown "$(whoami)" "$LOG_FILE"
 
 # --- Define cron job ---
-CRON_JOB="0 6 * * * $RUN_SCRIPT $PYTHON_EXEC >> $LOG_FILE 2>&1"
+CRON_JOB="0 4 * * * $RUN_SCRIPT $PYTHON_EXEC >> $LOG_FILE 2>&1"
 
 # --- Add if missing ---
 if crontab -l 2>/dev/null | grep -F "$RUN_SCRIPT" >/dev/null; then
