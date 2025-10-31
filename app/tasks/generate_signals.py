@@ -109,18 +109,22 @@ def _map_ranked_df_to_eod_signals(
     return out
 
 
-def generate_historic_signals_for_all_strategies() -> None:
+def generate_historic_signals_for_all_strategies(
+    start_date: date = last_year(),
+) -> None:
     for signal_strategy in SIGNAL_STRATEGY_PROVIDER.iter_strategies():
         Log.info(f"Generating historic signals for strategy {signal_strategy.name}")
-        generate_historic_signals_for_strategy(signal_strategy)
+        generate_historic_signals_for_strategy(signal_strategy, start_date)
 
 
-def generate_historic_signals_for_strategy(signal_strategy: SignalStrategy) -> None:
+def generate_historic_signals_for_strategy(
+    signal_strategy: SignalStrategy, start_date: date
+) -> None:
     exchange = "NYSE"  # hardcoded for now, replace with exchange abstraction later.
 
     trading_days = get_all_trading_days_between(
         exchange=exchange,
-        start=last_year(),
+        start=start_date,
         end=yesterday(),
     )
 

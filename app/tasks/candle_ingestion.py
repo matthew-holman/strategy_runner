@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import List
 
+from dateutil.utils import today
 from sqlmodel import Session
 
 from app.core.db import get_db
@@ -81,7 +82,7 @@ def heal_missing_candle_data() -> None:
                     security_id=security.id,
                     exchange=security.exchange,
                     start_date=period_start,
-                    end_date=yesterday(),
+                    end_date=today(),
                     session=db_session,
                 )
 

@@ -1,0 +1,68 @@
+{
+  "active": true,
+  "strategy_id": "accumulation_test_v1",
+  "name": "Accumulation Detector – 20D Quiet Base",
+  "signal_filters": [
+    {
+      "indicator": "range_pct_20",
+      "comparison": "<",
+      "value": 0.08,
+      "note": "Price range under 8% over last 20 days (tight consolidation)"
+    },
+    {
+      "indicator": "avg_vol_5d",
+      "comparison": "<",
+      "value": 1,
+      "comparison_field": "avg_vol_50d",
+      "note": "Recent 5-day volume below 50-day average volume (quiet accumulation)"
+    },
+    {
+      "indicator": "avg_vol_weighted_change_5d",
+      "comparison": "<",
+      "value": 1,
+      "comparison_field": "avg_vol_weighted_change_50d",
+      "note": "Short-term price-volume energy below 50-day average (low activity)"
+    },
+    {
+      "indicator": "rolling_volatility_20",
+      "comparison": "<",
+      "value": 0.03,
+      "note": "Low 20-day rolling volatility (<3%)"
+    },
+    {
+      "indicator": "breakout_proximity_20",
+      "comparison": "between",
+      "value": 0,
+      "min": -0.03,
+      "max": 0.02,
+      "note": "Price within 3% of 20-day high (near breakout level)"
+    }
+  ],
+  "validate_at_open_filters": [],
+  "ranking": [
+    {
+      "indicator": "range_pct_20",
+      "function": "gaussian",
+      "center": 0.04,
+      "sigma": 0.02,
+      "weight": 0.4,
+      "max": 1.0
+    },
+    {
+      "indicator": "breakout_proximity_20",
+      "function": "gaussian",
+      "center": -0.01,
+      "sigma": 0.015,
+      "weight": 0.3,
+      "max": 1.0
+    },
+    {
+      "indicator": "avg_vol_weighted_change_5d",
+      "function": "log_ratio",
+      "denominator": "avg_vol_weighted_change_50d",
+      "weight": 0.3,
+      "max": 1.0
+    }
+  ],
+  "max_signals_per_day": 10
+}

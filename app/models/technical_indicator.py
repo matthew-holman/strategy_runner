@@ -46,8 +46,35 @@ class TechnicalIndicatorBase(BaseModel, table=False):  # type: ignore[call-arg]
         default=None, description="Lowest low over the past 10 trading days"
     )
 
+    avg_vol_5d: Optional[float] = Field(
+        default=None,
+        description="Simple moving average  trading volume over the past 5 trading days",
+    )
+
     avg_vol_20d: Optional[float] = Field(
-        default=None, description="Average trading volume over the past 20 trading days"
+        default=None,
+        description="Simple moving average  trading volume over the past 20 trading days",
+    )
+
+    avg_vol_50d: Optional[float] = Field(
+        default=None,
+        description="Simple moving average  trading volume over the past 50 trading days",
+    )
+
+    avg_vol_weighted_change_5d: Optional[float] = Field(
+        default=None,
+        description="Simple moving average of volume weighted change for last 5 days",
+    )
+
+    avg_vol_weighted_change_50d: Optional[float] = Field(
+        default=None,
+        description="Simple moving average of volume weighted change for last 50 days",
+    )
+
+    price_volume_corr_20: Optional[float] = Field(
+        default=None,
+        description="20-day rolling correlation between daily percent change and volume, "
+        "indicating whether higher volume tends to coincide with positive price moves",
     )
 
     macd: Optional[float] = Field(
@@ -68,6 +95,28 @@ class TechnicalIndicatorBase(BaseModel, table=False):  # type: ignore[call-arg]
     close_position: Optional[float] = Field(
         default=None,
         description="Normalized close position in daily range: (Close - Low) / (High - Low)",
+    )
+
+    percent_change: Optional[float] = Field(
+        default=None, description="Daily percent change in closing price"
+    )
+
+    range_pct_20: Optional[float] = Field(
+        default=None,
+        description="Normalized 20-day price range: (rolling_max(close) - rolling_min(close)) / rolling_min(close);"
+        "lower values indicate tighter consolidation",
+    )
+
+    breakout_proximity_20: Optional[float] = Field(
+        default=None,
+        description="Percentage distance from 20-day resistance: (close / rolling_max(close)) - 1;"
+        "near zero suggests price is testing resistance",
+    )
+
+    rolling_volatility_20: Optional[float] = Field(
+        default=None,
+        description="Normalized 20-day rolling volatility of close prices: std(close) / mean(close);"
+        "measures relative price stability",
     )
 
 
@@ -108,12 +157,24 @@ class CombinedSignalRow(PydanticBase):
     rsi_14: Optional[float]
     high_10d: Optional[float]
     low_10d: Optional[float]
+
+    # volume metrics
+    avg_vol_5d: Optional[float]
     avg_vol_20d: Optional[float]
+    avg_vol_50d: Optional[float]
+    avg_vol_weighted_change_5d: Optional[float]
+    avg_vol_weighted_change_50d: Optional[float]
+
     macd: Optional[float]
     macd_signal: Optional[float]
     macd_hist: Optional[float]
     atr_14: Optional[float]
     close_position: Optional[float]
+
+    percent_change: Optional[float]
+    range_pct_20: Optional[float]
+    breakout_proximity_20: Optional[float]
+    rolling_volatility_20: Optional[float]
 
     # Optional: computed fields
     strategy_score: Optional[float] = None

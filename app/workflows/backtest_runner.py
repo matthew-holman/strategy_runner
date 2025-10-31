@@ -1,5 +1,7 @@
 import logging
 
+from datetime import date
+
 from app.core.db import get_db
 from app.handlers.backtest_run import BacktestRunHandler
 from app.models.backtest_run import BacktestRun
@@ -19,7 +21,7 @@ def main() -> int:
             Log.info(f"Generating historic signals for strategy {signal_strategy.name}")
 
             backtest_run = BacktestRun(strategy_id=signal_strategy.strategy_id)
-            generate_historic_signals_for_strategy(signal_strategy)
+            generate_historic_signals_for_strategy(signal_strategy, date(2020, 1, 1))
             validate_historic_signals_for_strategy_at_open(signal_strategy)
 
             for execution_strategy in EXECUTION_STRATEGY_PROVIDER.iter_strategies():

@@ -27,7 +27,6 @@ def main() -> int:
 
         Log.info("Updating tickers, checking for the largest securities.")
         new_tickers_added = region_security_sync()
-        new_tickers_added = True
         if new_tickers_added:
             Log.info("Updating security metadata.")
             check_for_missing_metadata()

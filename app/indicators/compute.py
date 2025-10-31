@@ -6,13 +6,19 @@ from sqlmodel import Session
 
 from app.indicators.atr import atr
 from app.indicators.avg_volume import avg_volume
+from app.indicators.breakout_proximity import breakout_proximity
 from app.indicators.close_position import close_position
 from app.indicators.ema import ema
 from app.indicators.exceptions import InsufficientOHLCVDataError
 from app.indicators.high_low import breakout_high_n, breakout_low_n
 from app.indicators.macd import macd
+from app.indicators.percent_change import percent_change
+from app.indicators.price_volume_corr import price_volume_corr
+from app.indicators.range_pct import range_pct
+from app.indicators.rolling_volatility import rolling_volatility
 from app.indicators.rsi import rsi
 from app.indicators.sma import sma
+from app.indicators.volume_weighted_change import volume_weighted_change
 from app.utils.trading_calendar import (
     UnsupportedExchangeError,
     get_nth_trading_day,
@@ -51,7 +57,20 @@ def compute_indicators_for_range(
         ) from e
 
     df = _load_ohlcv_df(security_id, lookback_start, end_date, session)
+    if df.empty or "candle_date" not in df.columns:
+        raise InsufficientOHLCVDataError(
+            security_id=security_id,
+            start_date=lookback_start,
+            end_date=end_date,
+        )
+
     df = df.sort_values("candle_date").reset_index(drop=True)
+
+    # Normalize numeric types to float64 for compatibility with pandas math
+    numeric_columns = ["open", "high", "low", "close", "adjusted_close", "volume"]
+    for column in numeric_columns:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce").astype("float64")
 
     if df.empty or len(df) < TRADING_DAYS_REQUIRED:
         raise InsufficientOHLCVDataError(
@@ -76,7 +95,18 @@ def compute_indicators_for_range(
     indicators["high_10d"] = breakout_high_n(df, lookback_days=10)
     indicators["low_10d"] = breakout_low_n(df, lookback_days=10)
 
+    indicators["avg_vol_5d"] = avg_volume(df, lookback_days=5)
     indicators["avg_vol_20d"] = avg_volume(df, lookback_days=20)
+    indicators["avg_vol_50d"] = avg_volume(df, lookback_days=50)
+
+    indicators["avg_vol_weighted_change_5d"] = volume_weighted_change(
+        df, lookback_days=5
+    )
+    indicators["avg_vol_weighted_change_50d"] = volume_weighted_change(
+        df, lookback_days=50
+    )
+
+    indicators["price_volume_corr_20"] = price_volume_corr(df, lookback_days=20)
 
     macd_df = macd(df, short_period=12, long_period=26, signal_period=9)
     indicators["macd"] = macd_df["macd"]
@@ -86,6 +116,11 @@ def compute_indicators_for_range(
     indicators["atr_14"] = atr(df, lookback_days=14)
 
     indicators["close_position"] = close_position(df)
+    indicators["percent_change"] = percent_change(df)
+
+    indicators["range_pct_20"] = range_pct(df, lookback_days=20)
+    indicators["breakout_proximity_20"] = breakout_proximity(df, lookback_days=20)
+    indicators["rolling_volatility_20"] = rolling_volatility(df, lookback_days=20)
 
     # Return only the rows between start_date and end_date
     return indicators[

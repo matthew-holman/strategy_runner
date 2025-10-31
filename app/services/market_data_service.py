@@ -226,7 +226,7 @@ class MarketDataService:
                 query,
                 offset=offset,
                 size=page_size,
-                sortField="intradaymarketcap",  # documented in EQ fields
+                sortField="percentchange",
                 sortAsc=False,
             )
             quotes = response["quotes"]
